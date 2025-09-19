@@ -1,24 +1,53 @@
 import streamlit as st
 
+# --- Configuración de la Página (Mejorada) ---
 st.set_page_config(
-    page_title="Kingdom Barber",
+    page_title="Kingdom Barber | Inicio",
     page_icon="👑",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded" # Asegura que la barra lateral esté visible por defecto
 )
 
-st.title("👑 Sistema de Gestión Kingdom Barber")
-st.image("https://i.imgur.com/gL52m2a.jpeg", caption="El trono te espera.") # Reemplaza con una imagen tuya
+# --- Contenido Principal ---
 
-st.markdown("""
-### Bienvenido al panel de control de Kingdom Barber.
+# Dividimos la pantalla en dos columnas para un diseño más dinámico
+col1, col2 = st.columns(
+    [0.6, 0.4], # La columna 1 (imagen) ocupará el 60%, la columna 2 (texto) el 40%
+    gap="large"  # Añadimos un espacio generoso entre las columnas
+)
 
-Este sistema te permite visualizar y gestionar las operaciones diarias de la barbería.
+# --- Columna 1: Imagen Principal ---
+with col1:
+    st.image(
+        "assets/barber_hero.jpg", # Asegúrate de tener esta imagen en tu carpeta 'assets'
+        caption="El arte del cuidado masculino.",
+        use_container_width=True # <--- Así queda corregido
+    )
 
-**Utiliza el menú de la izquierda para navegar por las diferentes secciones:**
-- **Dashboard:** Visualiza métricas clave y el rendimiento del negocio.
-- **Gestión de Citas:** Consulta, filtra y gestiona las citas programadas.
-- **Asistente IA:** Utiliza inteligencia artificial para mejorar la comunicación con los clientes.
+# --- Columna 2: Título y Descripción ---
+with col2:
+    st.markdown("<h1 style='text-align: left; color: #D4AF37;'>👑 Kingdom Barber</h1>", unsafe_allow_html=True)
+    st.markdown("## Bienvenido al Panel de Gestión")
+    st.markdown(
+        """
+        Este es tu centro de control para administrar la barbería con eficiencia y estilo. 
+        Desde aquí, puedes acceder a todas las herramientas necesarias para llevar tu negocio al siguiente nivel.
+        """
+    )
+    st.markdown("---") # Línea divisoria para separar visualmente
+    st.markdown(
+        """
+        #### **¿Qué puedes hacer?**
+        - **📊 Dashboard:** Analiza métricas clave en tiempo real.
+        - **🗓️ Gestión de Citas:** Organiza tu agenda y la de tus barberos.
+        - **🤖 Asistente IA:** Crea comunicaciones únicas para tus clientes.
+        
+        Usa el menú lateral para navegar entre las secciones.
+        """
+    )
 
-""")
 
+# --- Barra Lateral (Sidebar) ---
+st.sidebar.image("assets/logo.png", width=100) 
+st.sidebar.title("Menú de Navegación")
 st.sidebar.success("Selecciona una página para comenzar.")

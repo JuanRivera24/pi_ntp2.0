@@ -8,7 +8,8 @@ import data_manager as dm
 load_dotenv()
 try:
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    
 except Exception as e:
     st.error("API Key de Gemini no configurada. Crea un archivo .env.")
 
