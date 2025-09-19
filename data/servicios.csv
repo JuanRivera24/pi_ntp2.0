@@ -1,0 +1,5 @@
+ID_Servicio,Nombre_Servicio,Precio,Duracion_min
+201,Corte Premium,25000,45
+202,Afeitado Clásico,18000,30
+203,Arreglo de Barba,15000,25
+204,Ritual Completo (Corte + Barba),40000,70
