@@ -1,4 +1,9 @@
 import streamlit as st
+import sys
+import os
+
+# Añade la carpeta raíz del proyecto a la ruta de búsqueda de Python
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- Configuración de la Página (Mejorada) ---
 st.set_page_config(

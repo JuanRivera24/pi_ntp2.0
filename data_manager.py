@@ -1,6 +1,11 @@
 import streamlit as st
 import pandas as pd
 import requests
+import sys
+import os
+
+# Añade la carpeta raíz del proyecto a la ruta de búsqueda de Python
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- Caching de Datos ---
 # @st.cache_data le dice a Streamlit que ejecute esta función solo una vez
