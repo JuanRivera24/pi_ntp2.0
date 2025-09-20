@@ -17,6 +17,7 @@ st.markdown("---")
 def cargar_datos_citas():
     df_vista = dm.obtener_vista_citas_completa() 
     _, _, _, _, df_sedes = dm.cargar_datos()
+    # Convertimos a fecha, los valores NaN se convertirán a NaT (Not a Time)
     df_vista['Fecha'] = pd.to_datetime(df_vista['Fecha']).dt.date
     return df_vista, df_sedes
 
@@ -32,59 +33,66 @@ if sede_sel != "Todas":
 else:
     df_filtrado_por_sede = df_vista.copy()
 
-# --- INICIO DE LA CORRECCIÓN ---
-# 1. Usar las columnas de NOMBRE COMPLETO para las opciones de los filtros.
-opciones_barbero = ["Todos"] + list(df_filtrado_por_sede['Nombre_Completo_Barbero'].unique())
-opciones_cliente = ["Todos"] + list(df_filtrado_por_sede['Nombre_Completo_Cliente'].unique())
-# --- FIN DE LA CORRECCIÓN ---
+# Usamos las columnas de NOMBRE COMPLETO para las opciones de los filtros.
+# Usamos sorted() para que las listas aparezcan en orden alfabético.
+opciones_barbero = ["Todos"] + sorted(list(df_filtrado_por_sede['Nombre_Completo_Barbero'].dropna().unique()))
+opciones_cliente = ["Todos"] + sorted(list(df_filtrado_por_sede['Nombre_Completo_Cliente'].dropna().unique()))
 
 barbero_sel = st.sidebar.selectbox("Filtrar por Barbero:", options=opciones_barbero)
 cliente_sel = st.sidebar.selectbox("Filtrar por Cliente:", options=opciones_cliente)
 
-min_fecha = df_filtrado_por_sede['Fecha'].min() if not df_filtrado_por_sede.empty else datetime.now().date()
-max_fecha = df_filtrado_por_sede['Fecha'].max() if not df_filtrado_por_sede.empty else datetime.now().date()
+# --- INICIO DE LA CORRECCIÓN ---
+# Filtramos los valores nulos (NaT) de la columna Fecha ANTES de calcular min() y max()
+fechas_validas = df_filtrado_por_sede['Fecha'].dropna()
+
+min_fecha = fechas_validas.min() if not fechas_validas.empty else datetime.now().date()
+max_fecha = fechas_validas.max() if not fechas_validas.empty else datetime.now().date()
 
 fecha_sel = st.sidebar.date_input(
-    "Filtrar por Fecha:",
+    "Filtrar por Rango de Fecha:",
     value=(min_fecha, max_fecha),
     min_value=min_fecha,
-    max_value=max_fecha
+    max_value=max_fecha,
+    # Añadimos un key para evitar problemas de refresco en Streamlit
+    key="date_range_picker" 
 )
+# --- FIN DE LA CORRECCIÓN ---
+
 
 df_filtrado = df_filtrado_por_sede.copy()
 
-# --- INICIO DE LA CORRECCIÓN ---
-# 2. Usar las columnas de NOMBRE COMPLETO en la lógica de filtrado.
+# Usamos las columnas de NOMBRE COMPLETO en la lógica de filtrado.
 if barbero_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Barbero'] == barbero_sel]
 if cliente_sel != "Todos":
     df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Cliente'] == cliente_sel]
-# --- FIN DE LA CORRECCIÓN ---
 
 if len(fecha_sel) == 2:
     fecha_inicio, fecha_fin = fecha_sel
+    # Nos aseguramos de filtrar solo las filas que tienen una fecha válida
+    df_filtrado = df_filtrado.dropna(subset=['Fecha'])
     df_filtrado = df_filtrado[(df_filtrado['Fecha'] >= fecha_inicio) & (df_filtrado['Fecha'] <= fecha_fin)]
 
-st.header(f"Resultados: {len(df_filtrado)} citas encontradas")
+st.header(f"Resultados: {len(df_filtrado[df_filtrado['ID_Cita'].notna()])} citas encontradas")
 
-if df_filtrado.empty:
+if df_filtrado.empty or df_filtrado['ID_Cita'].isnull().all():
     st.info("No se encontraron citas que coincidan con los filtros seleccionados.")
 else:
+    # Calculamos ingresos solo sobre las filas que tienen citas reales
     total_ingresos_filtrado = df_filtrado['Precio'].sum()
     st.metric(
         label=f"💰 Ingresos para esta selección ({sede_sel})",
         value=f"${total_ingresos_filtrado:,.0f}"
     )
 
-    # --- INICIO DE LA CORRECCIÓN ---
-    # 3. Usar las columnas de NOMBRE COMPLETO para mostrar en la tabla.
     columnas_a_mostrar = [
         "Fecha", "Hora", "Nombre_Sede", "Nombre_Completo_Cliente", "Telefono", 
         "Nombre_Servicio", "Nombre_Completo_Barbero", "Precio"
     ]
     
+    # Mostramos solo las filas que corresponden a citas reales
     st.dataframe(
-        df_filtrado[columnas_a_mostrar].sort_values(by="Fecha", ascending=False),
+        df_filtrado.dropna(subset=['ID_Cita'])[columnas_a_mostrar].sort_values(by="Fecha", ascending=False),
         use_container_width=True,
         hide_index=True,
         column_config={
@@ -97,4 +105,3 @@ else:
             "Telefono": st.column_config.TextColumn("Teléfono"),
         }
     )
-    # --- FIN DE LA CORRECCIÓN ---
