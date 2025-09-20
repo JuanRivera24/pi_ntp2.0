@@ -116,14 +116,11 @@ with col_graf1:
 # Gráfico 2: Citas por Barbero
 with col_graf2:
     st.subheader("Carga de Trabajo por Barbero")
-    # --- INICIO CAMBIO ---
-    # 7. Usar el DataFrame filtrado aquí también
     if not df_vista_filtrada.empty:
-        # Aquí hay que tener cuidado: el nombre del barbero puede ser solo 'Nombre'
-        # Asumiendo que `obtener_vista_citas_completa` ya une Nombre y Apellido
-        # Si no, habría que ajustarlo en data_manager.py
-        # Por ahora, asumimos que la columna se llama 'Nombre_Barbero'
-        citas_barbero = df_vista_filtrada['Nombre'].value_counts().reset_index() # Suponiendo que la columna se llama 'Nombre' del barbero
+        # --- INICIO CORRECCIÓN ---
+        # Usamos el nombre de columna correcto: 'Nombre_Barbero'
+        citas_barbero = df_vista_filtrada['Nombre_Barbero'].value_counts().reset_index()
+        # --- FIN CORRECCIÓN ---
         citas_barbero.columns = ['Barbero', 'Cantidad de Citas']
         
         fig_bar = px.bar(
