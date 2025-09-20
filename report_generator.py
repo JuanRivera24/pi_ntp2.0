@@ -1,99 +1,82 @@
-# report_generator.py
-
-from fpdf import FPDF
 import pandas as pd
-from datetime import datetime
+from fpdf import FPDF
+import matplotlib.pyplot as plt
+import io # Necesario para manejar imágenes en memoria
 
-# Clase para crear el PDF con encabezado y pie de página
-class PDF(FPDF):
-    def header(self):
-        # fpdf2 maneja internamente la codificación. Solo pasamos el string.
-        # El encode/decode no es necesario aquí.
-        self.set_font('Arial', 'B', 15)
-        self.cell(0, 10, 'Reporte de Rendimiento - Kingdom Barber', 0, 1, 'C')
-        self.ln(10)
-
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
-        
-        # Tampoco es necesario codificar aquí.
-        pagina_str = f'Página {self.page_no()}'
-        self.cell(0, 10, pagina_str, 0, 0, 'C')
-        
-        # Movemos el cursor para alinear la fecha a la derecha sin sobreescribir.
-        self.set_x(-50) 
-        fecha_str = f"Generado el: {datetime.now().strftime('%d/%m/%Y')}"
-        self.cell(0, 10, fecha_str, 0, 0, 'R')
-
-# --- FUNCIÓN CORREGIDA Y SIMPLIFICADA ---
-def generar_reporte_pdf(df_citas_reales):
+def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     """
-    Genera un reporte en PDF a partir de un DataFrame de citas.
+    Genera un reporte en PDF con KPIs, análisis de IA y gráficos.
+
+    Args:
+        df (pd.DataFrame): El DataFrame filtrado con los datos.
+        analisis_ia (str): El texto del análisis generado por la IA.
+        contexto_reporte (dict): Un diccionario con el contexto (fechas, sede, etc.).
+
+    Returns:
+        bytes: El contenido del PDF como un objeto de bytes.
     """
-    pdf = PDF('P', 'mm', 'A4')
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Arial', 'B', 12)
+            self.cell(0, 10, 'Reporte de Desempeño - Barbería', 0, 1, 'C')
+            self.ln(10)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('Arial', 'I', 8)
+            self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+
+        def chapter_title(self, title):
+            self.set_font('Arial', 'B', 12)
+            self.cell(0, 10, title, 0, 1, 'L')
+            self.ln(5)
+
+        def chapter_body(self, body):
+            self.set_font('Arial', '', 11)
+            # Usamos multi_cell para manejar múltiples líneas y caracteres especiales
+            self.multi_cell(0, 10, body)
+            self.ln()
+
+    # Creación del objeto PDF
+    pdf = PDF()
     pdf.add_page()
 
-    # Es buena práctica manejar el caso donde el DataFrame esté vacío.
-    if df_citas_reales.empty:
-        pdf.set_font('Arial', '', 12)
-        pdf.cell(0, 10, "No hay datos disponibles para generar el reporte.", 0, 1)
-        # Salida final corregida:
-        return pdf.output(dest='S').encode('latin-1')
-
-    # Filtramos para evitar filas donde el precio es NaN
-    df_citas_validas = df_citas_reales.dropna(subset=['Precio'])
-
-    # Si después de filtrar no quedan datos, lo indicamos.
-    if df_citas_validas.empty:
-        pdf.set_font('Arial', '', 12)
-        pdf.cell(0, 10, "No hay citas con precios válidos para generar las métricas.", 0, 1)
-        return pdf.output(dest='S').encode('latin-1')
-
-    # 1. KPIs Generales
-    pdf.set_font('Arial', 'B', 14)
-    # Usamos cell() con ln=1 para un mejor control del espaciado.
-    pdf.cell(0, 10, '1. Métricas Clave (KPIs)', ln=1)
-    
-    total_ingresos = df_citas_validas['Precio'].sum()
-    total_citas = len(df_citas_validas)
-    servicio_popular = df_citas_validas['Nombre_Servicio'].mode().iloc[0]
-    # Agrupamos por barbero para sumar sus ingresos y encontrar el máximo
-    ingresos_por_barbero = df_citas_validas.groupby('Nombre_Completo_Barbero')['Precio'].sum()
-    barbero_top = ingresos_por_barbero.idxmax()
-
-    # Contenido de KPIs (sin .encode/.decode)
-    pdf.set_font('Arial', '', 12)
-    kpi_texto = (
-        f"  - Ingresos Totales: ${total_ingresos:,.0f}\n"
-        f"  - Citas Registradas: {total_citas}\n"
-        f"  - Servicio Más Popular: {servicio_popular}\n"
-        f"  - Barbero Top (por Ingresos): {barbero_top}"
-    )
-    pdf.multi_cell(0, 8, kpi_texto)
+    # Título del reporte con el contexto
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(0, 10, f"Reporte para: {contexto_reporte.get('sede', 'Todas las Sedes')}", 0, 1, 'C')
+    pdf.set_font('Arial', '', 10)
+    fecha_str = f"Desde: {contexto_reporte.get('fecha_inicio', 'N/A')} - Hasta: {contexto_reporte.get('fecha_fin', 'N/A')}"
+    pdf.cell(0, 10, fecha_str, 0, 1, 'C')
     pdf.ln(10)
+
+    # 1. KPIs
+    pdf.chapter_title('Indicadores Clave de Desempeño (KPIs)')
+    
+    total_citas = len(df)
+    total_ingresos = df['Precio'].sum()
+    ingreso_promedio = df['Precio'].mean() if total_citas > 0 else 0
+    
+    kpi_text = (
+        f"- Citas Totales: {total_citas}\n"
+        f"- Ingresos Totales: ${total_ingresos:,.2f}\n"
+        f"- Ingreso Promedio por Cita: ${ingreso_promedio:,.2f}"
+    )
+    pdf.chapter_body(kpi_text)
 
     # 2. Análisis de la IA
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 10, '2. Análisis por IA', ln=1)
-    pdf.set_font('Arial', '', 12)
-    analisis_texto = (
-        "El análisis de los datos revela una fuerte concentración de ingresos en los servicios más populares. "
-        "Se observa una tendencia positiva en el número de citas, con picos de actividad consistentes. "
-        "El rendimiento de los barberos es notable, destacando la contribución del barbero top a los ingresos generales."
-    )
-    pdf.multi_cell(0, 6, analisis_texto)
-    pdf.ln(10)
+    pdf.chapter_title('Análisis y Recomendaciones (IA)')
+    # Convertimos el texto a latin-1 para compatibilidad con FPDF
+    analisis_ia_compatible = analisis_ia.encode('latin-1', 'replace').decode('latin-1')
+    pdf.chapter_body(analisis_ia_compatible)
 
-    # 3. Gráficos (Placeholder)
-    pdf.set_font('Arial', 'B', 14)
-    pdf.cell(0, 10, '3. Visualización de Datos', ln=1)
-    pdf.set_font('Arial', '', 12)
-    placeholder_texto = "(Aquí se insertarán los gráficos del dashboard en el futuro)"
-    pdf.cell(0, 10, placeholder_texto, ln=1)
+    # (Opcional) Si quieres añadir un gráfico, puedes hacerlo aquí.
+    # Por ahora lo dejamos como placeholder para no añadir complejidad.
 
-    # --- CORRECCIÓN CLAVE ---
-    # El método output() con dest='S' ya devuelve bytes codificados en latin-1.
-    # No es necesario, y es incorrecto, volver a codificarlo.
-    # Lo convertimos a bytearray() directamente para que Streamlit pueda usarlo.
-    return pdf.output()
+    # Generar el PDF en memoria y devolverlo como bytes
+    # --- LA LÍNEA CLAVE DE LA SOLUCIÓN ---
+    # pdf.output() con dest='S' devuelve un bytearray.
+    # NO es necesario ni correcto llamar a .encode() sobre él.
+    # Simplemente lo convertimos a `bytes` para asegurar compatibilidad.
+    pdf_output = bytes(pdf.output())
+
+    return pdf_output
