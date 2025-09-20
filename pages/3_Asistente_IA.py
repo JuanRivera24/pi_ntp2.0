@@ -1,44 +1,67 @@
 import streamlit as st
-import google.generativeai as genai
-import os
-from dotenv import load_dotenv
-import data_manager as dm
+import data_manager
+from report_generator import generar_reporte_pdf
+from datetime import datetime
 
-# Configuración de Gemini (asegúrate de tener tu .env)
-load_dotenv()
-try:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+# --- Configuración de la página ---
+st.set_page_config(page_title="Asistente IA", page_icon="🤖", layout="wide")
+st.title("🤖 Asistente de Inteligencia Artificial")
+st.write("Utiliza el poder de la IA para obtener insights, generar reportes y crear campañas de marketing.")
+
+# Cargar datos
+df_citas_completa = data_manager.obtener_vista_citas_completa()
+# Los KPIs ya no son necesarios aquí, la función del reporte los calcula
+# kpis = data_manager.calcular_kpis(df_citas_completa)
+
+# Inicializar estado de sesión para el reporte
+if 'pdf_report' not in st.session_state:
+    st.session_state.pdf_report = None
+
+# --- Pestañas de funcionalidades ---
+tab1, tab2, tab3 = st.tabs(["📄 Generador de Reportes", "🔍 Analista de Datos Interactivo", "💡 Asistente de Marketing"])
+
+with tab1:
+    st.header("Crea documentos profesionales con el resumen del rendimiento del negocio.")
     
-except Exception as e:
-    st.error("API Key de Gemini no configurada. Crea un archivo .env.")
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.subheader("Configuración del Reporte")
+        report_type = st.selectbox(
+            "Selecciona el tipo de reporte que deseas generar:",
+            ("Reporte de Rendimiento General",) # Más tipos pueden ser añadidos aquí
+        )
 
-st.title("🤖 Asistente de Marketing con IA")
-st.markdown("Genera comunicaciones personalizadas para los clientes de Kingdom Barber.")
+        if st.button("Generar Reporte PDF"):
+            with st.spinner("Generando reporte..."):
+                # --- LLAMADA CORREGIDA ---
+                # Ahora pasamos el DataFrame completo
+                st.session_state.pdf_report = generar_reporte_pdf(df_citas_completa)
+            st.success("¡Tu reporte ha sido generado con éxito!")
 
-df_clientes, _, _, _ = dm.cargar_datos()
+    with col2:
+        st.subheader("Previsualización y Descarga")
+        if st.session_state.pdf_report:
+            # Construir el nombre del archivo con la fecha actual
+            fecha_actual = datetime.now().strftime("%Y-%m-%d")
+            nombre_archivo = f"Reporte_Rendimiento_{fecha_actual}.pdf"
 
-# Selector de cliente
-cliente_nombre = st.selectbox("Selecciona un cliente:", options=df_clientes['Nombre'])
+            st.download_button(
+                label="Descargar Reporte PDF",
+                data=bytes(st.session_state.pdf_report),
+                file_name=nombre_archivo,
+                mime="application/pdf"
+            )
+            st.info("Haz clic en el botón de arriba para descargar tu reporte.")
+        else:
+            st.info("Genera un reporte para poder descargarlo.")
 
-# Información del cliente seleccionado
-cliente_info = df_clientes[df_clientes['Nombre'] == cliente_nombre].iloc[0]
+with tab2:
+    st.header("Interactúa con tus datos")
+    st.write("Próximamente: Haz preguntas en lenguaje natural sobre tus clientes, citas y rendimiento.")
+    st.info("Funcionalidad en desarrollo.")
 
-opcion = st.radio(
-    "¿Qué tipo de mensaje quieres generar?",
-    ('Recordatorio de Cita', 'Promoción de Cumpleaños', 'Sugerencia de Nuevo Servicio')
-)
-
-if st.button(f"Generar Mensaje: {opcion}"):
-    prompt = ""
-    if opcion == 'Recordatorio de Cita':
-        prompt = f"Eres el asistente de Kingdom Barber. Escribe un mensaje de WhatsApp corto y amigable para {cliente_info['Nombre']} recordándole su próxima cita. Invítalo a llegar 5 minutos antes para disfrutar de un café. El tono debe ser moderno y exclusivo."
-    elif opcion == 'Promoción de Cumpleaños':
-        prompt = f"Eres el asistente de Kingdom Barber. Crea un mensaje de WhatsApp para {cliente_info['Nombre']} felicitándolo por su cumpleaños y ofreciéndole un 20% de descuento en su próximo 'Ritual Completo' como regalo."
-    elif opcion == 'Sugerencia de Nuevo Servicio':
-        prompt = f"Eres el asistente de Kingdom Barber. Redacta un mensaje para {cliente_info['Nombre']} presentándole un nuevo servicio llamado 'Tratamiento de Keratina para Barba'. Describe brevemente sus beneficios (suavidad y brillo) e invítalo a probarlo en su próxima visita."
-
-    with st.spinner("La IA está creando el mensaje perfecto..."):
-        response = model.generate_content(prompt)
-        st.subheader("Mensaje Sugerido:")
-        st.text_area("Puedes copiar este texto:", response.text, height=200)
+with tab3:
+    st.header("Crea campañas de marketing inteligentes")
+    st.write("Próximamente: Genera ideas para campañas, segmenta clientes y redacta mensajes de marketing.")
+    st.info("Funcionalidad en desarrollo.")
