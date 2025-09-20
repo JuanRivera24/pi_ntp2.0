@@ -1,68 +1,47 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-# --- INICIO CAMBIO ---
-# 1. Importar el data_manager correctamente para usar las nuevas funciones
 import data_manager as dm 
-# --- FIN CAMBIO ---
 import sys
 import os
 
-# Añade la carpeta raíz del proyecto a la ruta de búsqueda de Python
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# --- Configuración de la Página ---
 st.set_page_config(page_title="Dashboard | Kingdom Barber", page_icon="📊", layout="wide")
 
-# --- Título Principal ---
 st.markdown("<h1 style='text-align: center; color: #D4AF37;'>📊 Dashboard General</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-# --- Carga de Datos ---
-# Se mantiene igual, ya que data_manager ahora se encarga de todo
 @st.cache_data
 def cargar_datos_dashboard():
-    # La función obtener_vista_citas_completa() ya nos trae los datos con la sede incluida
+    # La función obtener_vista_citas_completa() ya nos trae la columna 'Nombre_Completo_Barbero'
     df_vista_completa = dm.obtener_vista_citas_completa()
     df_productos = dm.cargar_productos_api()
-    # --- INICIO CAMBIO ---
-    # 2. Cargar también los datos de las sedes para el filtro
     _, _, _, _, df_sedes = dm.cargar_datos()
     return df_vista_completa, df_productos, df_sedes
-    # --- FIN CAMBIO ---
 
 df_vista_completa, df_productos, df_sedes = cargar_datos_dashboard()
 
-# --- INICIO CAMBIO ---
-# 3. Añadir el filtro de Sede en la parte superior del Dashboard
 st.sidebar.header("Filtros del Dashboard")
-# Crear una lista de opciones para el selectbox. Incluimos 'Todas'
 lista_sedes = ['Todas'] + df_sedes['Nombre_Sede'].unique().tolist()
 sede_seleccionada = st.sidebar.selectbox("Selecciona una Sede", lista_sedes)
 
-# 4. Filtrar el DataFrame principal según la selección
 if sede_seleccionada == 'Todas':
     df_vista_filtrada = df_vista_completa.copy()
 else:
     df_vista_filtrada = df_vista_completa[df_vista_completa['Nombre_Sede'] == sede_seleccionada]
-# --- FIN CAMBIO ---
 
 
-# --- Panel de Métricas Clave (KPIs) ---
 st.header("Métricas Clave del Negocio")
 
-# --- INICIO CAMBIO ---
-# 5. Usar el nuevo DataFrame filtrado (df_vista_filtrada) para calcular las métricas
 if not df_vista_filtrada.empty:
     total_ingresos = df_vista_filtrada['Precio'].sum()
     total_citas = len(df_vista_filtrada)
-    # Usamos try-except por si no hay citas y .mode() da error
     try:
         servicio_popular = df_vista_filtrada['Nombre_Servicio'].mode().iloc[0]
     except IndexError:
         servicio_popular = "N/A"
 
-    # Las columnas se mantienen igual
     col1, col2, col3 = st.columns(3, gap="large")
     with col1:
         st.metric(
@@ -84,19 +63,14 @@ if not df_vista_filtrada.empty:
         )
 else:
     st.warning(f"No hay datos de citas para la sede '{sede_seleccionada}'.")
-# --- FIN CAMBIO ---
 
 st.markdown("---")
 
-# --- Gráficos Interactivos con Plotly ---
 st.header("Análisis Visual")
 col_graf1, col_graf2 = st.columns(2, gap="large")
 
-# Gráfico 1: Ingresos por Servicio (Gráfico de Torta - Pie Chart)
 with col_graf1:
     st.subheader("Distribución de Ingresos por Servicio")
-    # --- INICIO CAMBIO ---
-    # 6. Usar también el DataFrame filtrado para los gráficos
     if not df_vista_filtrada.empty:
         ingresos_servicio = df_vista_filtrada.groupby('Nombre_Servicio')['Precio'].sum().reset_index()
         
@@ -111,17 +85,17 @@ with col_graf1:
         st.plotly_chart(fig_pie, use_container_width=True)
     else:
         st.info("No hay datos de ingresos para mostrar el gráfico.")
-    # --- FIN CAMBIO ---
 
 # Gráfico 2: Citas por Barbero
 with col_graf2:
     st.subheader("Carga de Trabajo por Barbero")
     if not df_vista_filtrada.empty:
-        # --- INICIO CORRECCIÓN ---
-        # Usamos el nombre de columna correcto: 'Nombre_Barbero'
-        citas_barbero = df_vista_filtrada['Nombre_Barbero'].value_counts().reset_index()
-        # --- FIN CORRECCIÓN ---
+        # --- INICIO DE LA CORRECCIÓN ---
+        # 1. Usar la nueva columna 'Nombre_Completo_Barbero' creada en data_manager.py
+        citas_barbero = df_vista_filtrada['Nombre_Completo_Barbero'].value_counts().reset_index()
+        # 2. Renombrar las columnas para el gráfico
         citas_barbero.columns = ['Barbero', 'Cantidad de Citas']
+        # --- FIN DE LA CORRECCIÓN ---
         
         fig_bar = px.bar(
             citas_barbero,
@@ -134,11 +108,8 @@ with col_graf2:
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.info("No hay datos para mostrar la carga de trabajo de los barberos.")
-    # --- FIN CAMBIO ---
 
 
-# --- Sección de Productos (Desde API) ---
-# (Esta sección no necesita cambios, es independiente de las citas/sedes)
 st.markdown("---")
 st.header("📦 Inventario de Productos (Desde API)")
 if not df_productos.empty:

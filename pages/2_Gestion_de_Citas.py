@@ -32,11 +32,11 @@ if sede_sel != "Todas":
 else:
     df_filtrado_por_sede = df_vista.copy()
 
-# --- INICIO CORRECCIÓN ---
-# 1. Usar los nombres de columna correctos que definimos en data_manager.py
-opciones_barbero = ["Todos"] + list(df_filtrado_por_sede['Nombre_Barbero'].unique())
-opciones_cliente = ["Todos"] + list(df_filtrado_por_sede['Nombre_Cliente'].unique())
-# --- FIN CORRECCIÓN ---
+# --- INICIO DE LA CORRECCIÓN ---
+# 1. Usar las columnas de NOMBRE COMPLETO para las opciones de los filtros.
+opciones_barbero = ["Todos"] + list(df_filtrado_por_sede['Nombre_Completo_Barbero'].unique())
+opciones_cliente = ["Todos"] + list(df_filtrado_por_sede['Nombre_Completo_Cliente'].unique())
+# --- FIN DE LA CORRECCIÓN ---
 
 barbero_sel = st.sidebar.selectbox("Filtrar por Barbero:", options=opciones_barbero)
 cliente_sel = st.sidebar.selectbox("Filtrar por Cliente:", options=opciones_cliente)
@@ -53,13 +53,13 @@ fecha_sel = st.sidebar.date_input(
 
 df_filtrado = df_filtrado_por_sede.copy()
 
-# --- INICIO CORRECCIÓN ---
-# 2. Usar los nombres correctos en la lógica de filtrado
+# --- INICIO DE LA CORRECCIÓN ---
+# 2. Usar las columnas de NOMBRE COMPLETO en la lógica de filtrado.
 if barbero_sel != "Todos":
-    df_filtrado = df_filtrado[df_filtrado['Nombre_Barbero'] == barbero_sel]
+    df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Barbero'] == barbero_sel]
 if cliente_sel != "Todos":
-    df_filtrado = df_filtrado[df_filtrado['Nombre_Cliente'] == cliente_sel]
-# --- FIN CORRECCIÓN ---
+    df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Cliente'] == cliente_sel]
+# --- FIN DE LA CORRECCIÓN ---
 
 if len(fecha_sel) == 2:
     fecha_inicio, fecha_fin = fecha_sel
@@ -76,11 +76,11 @@ else:
         value=f"${total_ingresos_filtrado:,.0f}"
     )
 
-    # --- INICIO CORRECCIÓN ---
-    # 3. Usar los nombres correctos al definir las columnas a mostrar
+    # --- INICIO DE LA CORRECCIÓN ---
+    # 3. Usar las columnas de NOMBRE COMPLETO para mostrar en la tabla.
     columnas_a_mostrar = [
-        "Fecha", "Hora", "Nombre_Sede", "Nombre_Cliente", "Telefono", 
-        "Nombre_Servicio", "Nombre_Barbero", "Precio"
+        "Fecha", "Hora", "Nombre_Sede", "Nombre_Completo_Cliente", "Telefono", 
+        "Nombre_Servicio", "Nombre_Completo_Barbero", "Precio"
     ]
     
     st.dataframe(
@@ -90,10 +90,11 @@ else:
         column_config={
             "Fecha": st.column_config.DateColumn("Fecha", format="DD/MM/YYYY"),
             "Precio": st.column_config.NumberColumn("Precio ($)", format="$ %.0f"),
-            "Nombre_Cliente": st.column_config.TextColumn("Cliente"),
-            "Nombre_Barbero": st.column_config.TextColumn("Barbero"),
+            "Nombre_Completo_Cliente": st.column_config.TextColumn("Cliente"),
+            "Nombre_Completo_Barbero": st.column_config.TextColumn("Barbero"),
             "Nombre_Sede": st.column_config.TextColumn("Sede"),
             "Nombre_Servicio": st.column_config.TextColumn("Servicio"),
+            "Telefono": st.column_config.TextColumn("Teléfono"),
         }
     )
-    # --- FIN CORRECCIÓN ---
+    # --- FIN DE LA CORRECCIÓN ---

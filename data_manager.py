@@ -4,11 +4,12 @@ import requests
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# --- Esta línea es opcional si tus archivos están en la misma carpeta ---
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 @st.cache_data
 def cargar_datos():
-    """Carga todos los dataframes desde los archivos CSV, incluyendo las nuevas sedes."""
+    """Carga todos los dataframes desde los archivos CSV."""
     df_clientes = pd.read_csv("data/clientes.csv")
     df_barberos = pd.read_csv("data/barberos.csv")
     df_servicios = pd.read_csv("data/servicios.csv")
@@ -29,41 +30,25 @@ def cargar_productos_api():
 
 def obtener_vista_citas_completa():
     """
-    Realiza los merges para tener una vista unificada de las citas, 
-    asegurando que las columnas clave se mantengan y renombrando para evitar conflictos.
+    Realiza los merges para tener una vista unificada de las citas y 
+    crea columnas de nombre completo para clientes y barberos.
     """
     df_clientes, df_barberos, df_servicios, df_citas, df_sedes = cargar_datos()
     
-    # --- INICIO CORRECCIÓN ---
+    # 1. Crear las columnas de nombre completo.
+    df_clientes['Nombre_Completo_Cliente'] = df_clientes['Nombre_Cliente'] + ' ' + df_clientes['Apellido_Cliente']
+    df_barberos['Nombre_Completo_Barbero'] = df_barberos['Nombre_Barbero'] + ' ' + df_barberos['Apellido_Barbero']
     
-    # 1. Renombrar columnas 'Nombre' y 'Apellido' para evitar conflictos antes de unir.
-    df_clientes_renombrado = df_clientes.rename(columns={'Nombre': 'Nombre_Cliente', 'Apellido': 'Apellido_Cliente'})
-    df_barberos_renombrado = df_barberos.rename(columns={'Nombre': 'Nombre_Barbero', 'Apellido': 'Apellido_Barbero'})
+    # 2. Realizar los merges en el orden correcto para evitar el KeyError.
+    # Empezamos con citas y le añadimos sedes, que comparten ID_Sede.
+    df_vista = pd.merge(df_citas, df_sedes, on="ID_Sede")
     
-    # 2. Realizar los merges secuencialmente.
-    # Unimos citas con clientes. df_citas ya tiene ID_Sede.
-    df_vista = pd.merge(df_citas, df_clientes_renombrado, on="ID_Cliente")
-    
-    # Unimos con barberos. 
-    # Aquí puede estar el problema. Si 'df_barberos' también tiene ID_Sede,
-    # pandas crea ID_Sede_x y ID_Sede_y. Vamos a ser explícitos.
-    # El ID_Sede de la cita es el que manda.
-    df_vista = pd.merge(df_vista, df_barberos_renombrado, on="ID_Barbero", suffixes=('', '_barbero'))
-    
-    # Unimos con servicios
+    # Ahora añadimos el resto de la información a la tabla ya combinada.
+    df_vista = pd.merge(df_vista, df_clientes, on="ID_Cliente")
+    df_vista = pd.merge(df_vista, df_barberos, on="ID_Barbero")
     df_vista = pd.merge(df_vista, df_servicios, on="ID_Servicio")
-    
-    # 3. Finalmente, unimos con sedes usando la columna 'ID_Sede' que viene de 'df_citas'.
-    # Este merge ahora debería funcionar porque df_vista SÍ tiene la columna 'ID_Sede'.
-    df_vista = pd.merge(df_vista, df_sedes, on="ID_Sede")
-    
-    # --- FIN CORRECCIÓN ---
     
     # Convertir columna de fecha a formato datetime
     df_vista['Fecha'] = pd.to_datetime(df_vista['Fecha'])
-    
-    # Limpiamos columnas duplicadas de ID_Sede si es que se crearon (_barbero)
-    if 'ID_Sede_barbero' in df_vista.columns:
-        df_vista = df_vista.drop(columns=['ID_Sede_barbero'])
     
     return df_vista

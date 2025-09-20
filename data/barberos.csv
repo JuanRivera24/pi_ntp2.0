@@ -1,4 +1,4 @@
-ID_Barbero,Nombre,Apellido,ID_Sede
+ID_Barbero,Nombre_Barbero,Apellido_Barbero,ID_Sede
 101,Ricardo,Gómez,301
 102,Mateo,Ramírez,301
 103,Carlos,Fernández,301

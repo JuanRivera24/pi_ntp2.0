@@ -1,4 +1,4 @@
-ID_Cliente,Nombre,Apellido,Telefono,Email
+ID_Cliente,Nombre_Cliente,Apellido_Cliente,Telefono,Email
 1,Juan,Pérez,3109876543,juan.perez@email.com
 2,Carlos,López,3201234567,carlos.lopez@email.com
 3,Pedro,Gómez,3154567890,pedro.gomez@email.com
