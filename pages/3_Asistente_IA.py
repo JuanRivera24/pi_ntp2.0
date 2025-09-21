@@ -98,66 +98,136 @@ with tab_reportes:
             nombre_archivo = f"Reporte_{sede_seleccionada.replace(' ', '_')}_{rango_fechas[0].strftime('%Y%m%d')}_{rango_fechas[1].strftime('%Y%m%d')}.pdf"
             st.download_button(label="📥 Descargar Reporte PDF", data=pdf_bytes, file_name=nombre_archivo, mime="application/pdf")
 
-# --- PESTAÑA 2: ANALISTA INTERACTIVO (VERSIÓN MEJORADA CON PERSONALIDAD) ---
+# --- PESTAÑA 2: ANALISTA INTERACTIVO (VERSIÓN CON ANÁLISIS AVANZADO Y TEMPORAL) ---
 with tab_analista:
     st.header("🕵️ Chatea con tus Datos")
-    st.markdown("Hazme una pregunta sobre tus datos y te ayudaré a encontrar la respuesta. ¡Estoy aquí para asistirte!")
+    st.markdown("Hazme una pregunta directa sobre los datos filtrados y te ayudaré a encontrar la respuesta de forma objetiva.")
     
-    # Muestra un resumen más amigable del contexto actual
-    st.info(f"Estoy analizando **{len(df_filtrado)} citas** de la sede **{sede_seleccionada}**. ¡Pregúntame lo que necesites saber sobre este periodo!")
+    st.info(f"Estoy listo para analizar las **{len(df_filtrado)} citas** que coinciden con tus filtros. ¡Pregúntame lo que necesites!")
 
     pregunta_usuario = st.text_input(
         "Escribe tu pregunta aquí:", 
-        placeholder="Ej: ¿Qué día de la semana tuvimos más clientes?"
+        placeholder="Ej: ¿Qué mes tuvimos más ganancias?"
     )
 
-    if st.button("🔍 Preguntar al Asistente"):
+    if st.button("🔍 Analizar y Responder"):
         if not model:
-            st.error("Lo siento, parece que no puedo conectarme con mi cerebro de IA en este momento.")
+            st.error("No puedo conectarme con mi motor de IA en este momento.")
         elif not pregunta_usuario:
-            st.warning("¡No seas tímido! Escríbeme una pregunta para que pueda ayudarte.")
+            st.warning("Por favor, escribe una pregunta para que pueda analizar los datos.")
         elif df_filtrado.empty:
-            st.warning("Uhm... parece que no hay datos para analizar con los filtros que seleccionaste. ¿Probamos con otro rango de fechas?")
+            st.warning("No hay datos disponibles para los filtros que seleccionaste.")
         else:
-            with st.spinner("Consultando los registros y analizando los números... 🤔"):
-                # Usamos una muestra representativa pero no abrumadora
-                datos_contexto = df_filtrado.sample(min(len(df_filtrado), 100)).to_csv()
-
-                # --- EL NUEVO PROMPT CON PERSONALIDAD ---
-                prompt_analista_mejorado = f"""
-                Adopta la personalidad de un asistente de análisis de datos amigable, inteligente y proactivo para el gerente de una barbería. Tu nombre es "Alex".
+            with st.spinner("Realizando un análisis profundo y consultando a la IA... 🧐"):
                 
-                Tu tarea es responder a la pregunta del gerente basándote únicamente en el siguiente extracto de datos en formato CSV.
+                # Aseguramos que la columna 'Fecha' sea del tipo datetime para los cálculos
+                df_filtrado['Fecha'] = pd.to_datetime(df_filtrado['Fecha'])
+
+                # --- RESÚMENES DE PANDAS (INCLUYENDO EL NUEVO ANÁLISIS TEMPORAL) ---
+
+                # 1. Métricas Generales
+                total_citas = len(df_filtrado)
+                total_ingresos = df_filtrado['Precio'].sum()
+
+                # 2. Resumen por Servicio
+                resumen_servicios = df_filtrado.groupby('Nombre_Servicio').agg(
+                    Numero_de_Citas=('Precio', 'count'),
+                    Ingresos_Totales=('Precio', 'sum')
+                ).nlargest(5, 'Ingresos_Totales').to_string()
+
+                # 3. Resumen por Barbero
+                resumen_barberos = df_filtrado.groupby('Nombre_Completo_Barbero').agg(
+                    Numero_de_Citas=('Precio', 'count'),
+                    Ingresos_Totales=('Precio', 'sum')
+                ).nlargest(5, 'Ingresos_Totales').to_string()
+
+                # 4. Análisis del Cliente más Fiel
+                # (Este código se mantiene igual que la versión anterior)
+                cliente_mas_fiel_info = ""
+                top_clientes = df_filtrado['Nombre_Completo_Cliente'].value_counts()
+                if not top_clientes.empty:
+                    # ... (el resto del código del cliente fiel va aquí, sin cambios)
+                    nombre_cliente_fiel = top_clientes.index[0]
+                    visitas_cliente_fiel = top_clientes.iloc[0]
+                    df_cliente_fiel = df_filtrado[df_filtrado['Nombre_Completo_Cliente'] == nombre_cliente_fiel]
+                    servicios_cliente_fiel = df_cliente_fiel['Nombre_Servicio'].value_counts().nlargest(3).to_string()
+                    dias_entre_visitas = df_cliente_fiel['Fecha'].sort_values().diff().dt.days.mean()
+                    cliente_mas_fiel_info = f"""
+Análisis del Cliente Más Fiel ({nombre_cliente_fiel}):
+- Visitas Totales: {visitas_cliente_fiel}
+- Frecuencia Promedio: Cada {dias_entre_visitas:.1f} días.
+- Sus 3 servicios favoritos:
+{servicios_cliente_fiel}"""
+
+                # --- ¡NUEVO! 5. ANÁLISIS TEMPORAL (POR MES Y DÍA DE LA SEMANA) ---
+                analisis_temporal = ""
+                # Solo realizamos el análisis si hay más de un día de datos
+                if df_filtrado['Fecha'].nunique() > 1:
+                    # Extraemos el nombre del mes y el día de la semana
+                    df_filtrado['Mes'] = df_filtrado['Fecha'].dt.strftime('%Y-%m (%B)') # Formato: 2023-10 (Octubre)
+                    df_filtrado['Dia_Semana'] = df_filtrado['Fecha'].dt.day_name()
+
+                    # Calculamos ingresos por mes
+                    ingresos_por_mes = df_filtrado.groupby('Mes')['Precio'].sum().sort_values(ascending=False).to_string()
+                    
+                    # Calculamos citas por día de la semana
+                    citas_por_dia = df_filtrado['Dia_Semana'].value_counts().to_string()
+
+                    analisis_temporal = f"""
+Análisis Temporal:
+- Ingresos por Mes:
+{ingresos_por_mes}
+
+- Citas por Día de la Semana:
+{citas_por_dia}
+"""
+
+                # Unimos todos los resúmenes en un solo contexto para la IA
+                contexto_resumido = f"""
+Resumen General:
+- Citas Totales: {total_citas}
+- Ingresos Totales: ${total_ingresos:,.2f}
+
+{analisis_temporal}
+
+Resumen por Servicio (Top 5 por Ingresos):
+{resumen_servicios}
+
+Resumen por Barbero (Top 5 por Ingresos):
+{resumen_barberos}
                 
-                Datos para tu análisis:
+{cliente_mas_fiel_info}
+                """
+
+                # El prompt se mantiene igual, ya que es robusto. Lo importante es el contexto.
+                prompt_analista_final = f"""
+                Eres "Alex", un asistente de análisis de datos amigable, inteligente y muy preciso. Tu trabajo es responder preguntas sobre el negocio de una barbería.
+
+                **REGLAS CLAVE:**
+                1.  **Usa solo los datos del resumen:** Tu única fuente de información es el resumen que te proporciono. No inventes datos.
+                2.  **Sé directo y claro:** Responde a la pregunta del usuario de forma natural y conversacional. Evita saludos formales. Ve directo al grano.
+                3.  **Si no sabes, dilo:** Si la información no está en el resumen para responder, explícalo amablemente.
+
+                **RESUMEN DE DATOS PARA TU ANÁLISIS:**
                 ---
-                {datos_contexto}
+                {contexto_resumido}
                 ---
 
-                Pregunta del gerente: "{pregunta_usuario}"
+                **PREGUNTA DEL USUARIO:**
+                "{pregunta_usuario}"
 
-                Debes estructurar tu respuesta de la siguiente manera, usando un tono conversacional y servicial:
-
-                **Respuesta Directa:** 
-                (Ofrece una respuesta clara y directa a la pregunta).
-
-                **El Porqué:** 
-                (Explica brevemente cómo llegaste a esa conclusión, mencionando los datos que usaste. Por ejemplo: "Llegué a esta conclusión al observar que...").
-
-                **Dato Interesante:** 
-                (Añade un pequeño insight o dato curioso que hayas notado en los datos y que esté relacionado con la pregunta. Si no encuentras nada, puedes omitir esta parte).
-
-                Si los datos no son suficientes para responder, explícalo amablemente y sugiere qué tipo de datos necesitarías. No inventes información.
+                **Instrucciones:**
+                Analiza el resumen y responde la pregunta de forma concisa y basada en la evidencia.
                 """
                 
                 try:
-                    respuesta_ia = model.generate_content(prompt_analista_mejorado)
-                    # Usamos st.expander para una presentación más limpia y organizada
-                    with st.expander("Aquí tienes tu análisis:", expanded=True):
-                        st.markdown(respuesta_ia.text)
-                except Exception as e:
-                    st.error(f"¡Vaya! Tuve un problema al procesar tu pregunta. Aquí está el detalle técnico: {e}")
+                    respuesta_ia = model.generate_content(prompt_analista_final)
+                    st.markdown("### 💡 Aquí está tu análisis:")
+                    st.success(respuesta_ia.text)
 
+                except Exception as e:
+                    st.error(f"¡Oops! Algo salió mal al intentar procesar tu pregunta. Detalle del error: {e}")
+                    
 # --- PESTAÑA 3: ASISTENTE DE MARKETING (NUEVA FUNCIONALIDAD) ---
 with tab_marketing:
     st.header("🎯 Asistente de Marketing Inteligente")
