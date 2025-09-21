@@ -12,7 +12,6 @@ def get_image_as_base64(path):
         return None
 
 # --- Rutas a las imágenes ---
-# Basado en la estructura de tu proyecto, donde 'assets' está al mismo nivel que 'inicio.py'
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 img_hero_path = os.path.join(ASSETS_DIR, "barber_hero.jpg")
@@ -40,6 +39,32 @@ col1, col2 = st.columns([0.6, 0.4], gap="large")
 
 with col1:
     st.image(img_hero_path, caption="El arte del cuidado masculino.", use_container_width=True)
+
+    # --- Botón debajo de la imagen ---
+    st.markdown(
+        """
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="http://localhost:3000/" target="_blank">
+                <button style="
+                    background-color:#D4AF37;
+                    border:none;
+                    color:black;
+                    padding:12px 24px;
+                    text-align:center;
+                    text-decoration:none;
+                    display:inline-block;
+                    font-size:16px;
+                    border-radius:8px;
+                    cursor:pointer;
+                    font-weight:bold;
+                ">
+                    🌐 Visita nuestro sitio web
+                </button>
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 with col2:
     st.markdown("<h1 style='text-align: left; color: #D4AF37;'>👑 Kingdom Barber</h1>", unsafe_allow_html=True)
@@ -90,9 +115,9 @@ st.markdown("""
 }
 .developer-image {
     width: 120px;
-    height: 160px;         /* Alto del rectángulo (más grande para hacerlo vertical) */
+    height: 160px;
     border-radius: 10px;
-    object-fit: cover;     /* Rellena el espacio sin deformar. ¡Solución ideal para retratos! */
+    object-fit: cover;
     margin-bottom: 15px;
     border: 3px solid #D4AF37;
 }

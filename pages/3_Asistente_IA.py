@@ -418,7 +418,7 @@ with tab_asesor:
                             st.markdown(response.text)
 
                             # --- ¡NUEVO! Botón para reservar cita ---
-                            st.link_button("📅 ¡Reserva tu cita ahora!", "http://localhost:3001/#citas", type="primary")
+                            st.link_button("📅 ¡Reserva tu cita ahora!", "http://localhost:3000", type="primary")
 
                         except Exception as e:
                             st.error("¡Oops! Ocurrió un error al analizar la imagen.")
