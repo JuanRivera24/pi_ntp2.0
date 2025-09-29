@@ -17,7 +17,7 @@ def get_image_as_base64(path):
 # --- FUNCIÓN DE DIAGNÓSTICO ---
 def run_diagnostics():
     """Ejecuta y muestra los resultados de las pruebas del sistema directamente en la página."""
-    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, los archivos CSV locales y tu API central.")
+    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, los archivos CSV locales, tu API central y los datasets externos.")
     st.markdown("---")
 
     # TEST 1: Conexión a la API de Gemini
@@ -79,6 +79,29 @@ def run_diagnostics():
                 all_successful = False
         if all_successful:
             st.success("✅ ¡ÉXITO! Todos los endpoints de la API local respondieron correctamente.")
+
+    st.markdown("---")
+
+    # TEST 4: Prueba de Carga de Datasets Externos
+    st.subheader("4. Prueba de Carga de Datasets Externos")
+    datasets_externos = {
+        "Nacional - Establecimientos de Belleza": "https://www.datos.gov.co/api/views/e27n-di57/rows.csv?accessType=DOWNLOAD",
+        "Risaralda - Estética Facial y Corporal": "https://www.datos.gov.co/api/views/92e4-cjqu/rows.csv?accessType=DOWNLOAD",
+        "Estética Local (Ejemplo)": "https://www.datos.gov.co/api/views/mwxa-drpn/rows.csv?accessType=DOWNLOAD",
+    }
+    with st.spinner("Probando la descarga y lectura de los datasets de datos.gov.co..."):
+        all_successful_external = True
+        for nombre, url in datasets_externos.items():
+            try:
+                df = pd.read_csv(url, nrows=10) # Leemos solo 10 filas para una prueba rápida
+                st.success(f"✅ Carga exitosa de '{nombre}'.")
+            except Exception as e:
+                st.error(f"❌ ERROR al cargar el dataset '{nombre}'.")
+                st.expander("Ver detalle del error").error(e)
+                all_successful_external = False
+        if all_successful_external:
+            st.success("✅ ¡ÉXITO! Todos los datasets externos se cargaron correctamente.")
+
 
 # --- Rutas a las imágenes ---
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")

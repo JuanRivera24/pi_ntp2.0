@@ -6,7 +6,7 @@ import re
 # --- 1. CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
     page_title="Peluquerías en Colombia",
-    page_icon="✂️",
+    page_icon="💡",
     layout="wide"
 )
 
@@ -45,45 +45,78 @@ def load_and_normalize_dataset(url):
         return pd.DataFrame()
 
 # ==============================================================================
-# --- 3. DASHBOARDS ESPECÍFICOS (CON EL NACIONAL RECONSTRUIDO) ---
+# --- 3. NUEVA SECCIÓN DE CONCLUSIONES ---
+# ==============================================================================
+
+def mostrar_conclusiones_dinamicas(df_original, df_filtrado, columna_ubicacion, nombre_singular_ubicacion):
+    """
+    Genera y muestra conclusiones basadas en los datos filtrados.
+    """
+    st.header("💡 Conclusiones Dinámicas")
+
+    if df_filtrado.empty:
+        st.warning("No hay datos para los filtros seleccionados, por lo que no se pueden generar conclusiones.")
+        return
+
+    # Insight 1: Resumen del filtro
+    total_original = len(df_original)
+    total_filtrado = len(df_filtrado)
+    porcentaje_filtrado = (total_filtrado / total_original) * 100
+    st.info(f"Estás viendo **{total_filtrado:,}** establecimientos, que representan el **{porcentaje_filtrado:.1f}%** del total de **{total_original:,}** registros del dataset.")
+
+    # Insight 2: Ubicación más común
+    if columna_ubicacion in df_filtrado.columns and df_filtrado[columna_ubicacion].nunique() > 1:
+        lugar_top = df_filtrado[columna_ubicacion].mode()[0]
+        conteo_top = df_filtrado[columna_ubicacion].value_counts().max()
+        porcentaje_top = (conteo_top / total_filtrado) * 100
+        
+        mensaje = f"""
+        - El **{nombre_singular_ubicacion}** con la mayor concentración de establecimientos en tu selección es **{lugar_top}**.
+        - Cuenta con **{conteo_top}** registros, lo que equivale al **{porcentaje_top:.1f}%** de los resultados mostrados.
+        """
+        st.markdown(mensaje)
+    elif df_filtrado[columna_ubicacion].nunique() == 1:
+        lugar_unico = df_filtrado[columna_ubicacion].unique()[0]
+        st.markdown(f"- Todos los resultados mostrados pertenecen al **{nombre_singular_ubicacion}** de **{lugar_unico}**.")
+
+
+# ==============================================================================
+# --- 4. DASHBOARDS ESPECÍFICOS (AHORA INCLUYEN CONCLUSIONES) ---
 # ==============================================================================
 
 def mostrar_dashboard_nacional(df):
-    """
-    Dashboard RECONSTRUIDO para el dataset Nacional.
-    Ahora usa 'municipio comercial' ya que 'departamento' y 'ciudad' no existen.
-    """
     st.sidebar.header("🔍 Filtros Nacionales")
-    
     df_filtrado = df.copy()
     
-    # --- Filtro por nombre ---
+    # ... (código de filtros sin cambios) ...
     st.sidebar.subheader("Filtrar por Establecimiento")
     if 'nombre del establecimiento' in df_filtrado.columns:
         nombres = ['Todos'] + sorted(df_filtrado['nombre del establecimiento'].dropna().unique())
-        nombre_sel = st.sidebar.selectbox("Selecciona un nombre (puedes escribir para buscar)", nombres)
+        nombre_sel = st.sidebar.selectbox("Selecciona un nombre", nombres)
         if nombre_sel != 'Todos':
             df_filtrado = df_filtrado[df_filtrado['nombre del establecimiento'] == nombre_sel]
-
-    # --- Filtro por ubicación (usando la columna que sí existe) ---
     st.sidebar.subheader("Filtrar por Ubicación")
     if 'municipio comercial' in df_filtrado.columns:
         municipios = ['Todos'] + sorted(df_filtrado['municipio comercial'].dropna().unique())
         municipio_sel = st.sidebar.selectbox("Municipio Comercial", municipios)
         if municipio_sel != 'Todos':
             df_filtrado = df_filtrado[df_filtrado['municipio comercial'] == municipio_sel]
-
+            
     st.header("Métricas Clave a Nivel Nacional")
+    # ... (código de métricas sin cambios) ...
     total_registros = len(df_filtrado)
     total_municipios = df_filtrado['municipio comercial'].nunique() if 'municipio comercial' in df_filtrado.columns else 0
     municipio_comun = df_filtrado['municipio comercial'].mode()[0] if total_municipios > 0 and not df_filtrado['municipio comercial'].mode().empty else "N/A"
-
     col1, col2, col3 = st.columns(3)
     col1.metric("💈 Establecimientos Encontrados", f"{total_registros:,}")
     col2.metric("🗺️ Municipios en Selección", f"{total_municipios}")
     col3.metric("📍 Municipio Más Común", municipio_comun)
+
+    # Llamada a la nueva función de conclusiones
+    mostrar_conclusiones_dinamicas(df, df_filtrado, 'municipio comercial', 'Municipio')
     
     st.header("Análisis Visual Nacional")
+    # ... (código de gráficos sin cambios) ...
     if 'municipio comercial' in df_filtrado.columns:
         st.subheader("Establecimientos por Municipio Comercial")
         conteo_mun = df_filtrado['municipio comercial'].value_counts().nlargest(15).reset_index()
@@ -91,54 +124,69 @@ def mostrar_dashboard_nacional(df):
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No se encontró la columna 'municipio comercial' para generar gráficos.")
-        
+
     return df_filtrado
 
 def mostrar_dashboard_risaralda(df):
-    """Dashboard para Risaralda con gráfico de barras."""
     st.sidebar.header("🔍 Filtros para Risaralda")
     df_filtrado = df.copy()
+    # ... (código de filtros sin cambios) ...
     municipios = ['Todos'] + sorted(df['municipio'].dropna().unique())
     mun_sel = st.sidebar.selectbox("Municipio de Risaralda", municipios)
     if mun_sel != 'Todos':
         df_filtrado = df_filtrado[df_filtrado['municipio'] == mun_sel]
+
     st.header("Métricas Clave para Risaralda")
+    # ... (código de métricas sin cambios) ...
     total_registros = len(df_filtrado)
     municipio_comun = df_filtrado['municipio'].mode()[0] if not df_filtrado.empty else "N/A"
     col1, col2 = st.columns(2)
     col1.metric("💈 Establecimientos en Selección", f"{total_registros:,}")
     col2.metric("📍 Municipio Más Común", municipio_comun)
+
+    # Llamada a la nueva función de conclusiones
+    mostrar_conclusiones_dinamicas(df, df_filtrado, 'municipio', 'Municipio')
+
     st.header("Análisis Visual para Risaralda")
+    # ... (código de gráficos sin cambios) ...
     st.subheader("Distribución de Establecimientos por Municipio")
     conteo_mun = df_filtrado['municipio'].value_counts().reset_index()
     fig = px.bar(conteo_mun, x='municipio', y='count', text_auto=True, title="Conteos por Municipio en Risaralda")
-    fig.update_layout(xaxis_title="Municipio", yaxis_title="Cantidad de Establecimientos")
     st.plotly_chart(fig, use_container_width=True)
+
     return df_filtrado
 
 def mostrar_dashboard_local(df):
-    """Dashboard para el dataset de Estética Local."""
     st.sidebar.header("🔍 Filtros Locales")
     df_filtrado = df.copy()
+    # ... (código de filtros sin cambios) ...
     barrios = ['Todos'] + sorted(df['barrio'].dropna().unique())
     barrio_sel = st.sidebar.selectbox("Barrio", barrios)
     if barrio_sel != 'Todos':
         df_filtrado = df_filtrado[df_filtrado['barrio'] == barrio_sel]
+    
     st.header("Métricas Clave Locales")
+    # ... (código de métricas sin cambios) ...
     total_registros = len(df_filtrado)
     barrio_comun = df_filtrado['barrio'].mode()[0] if not df_filtrado.empty else "N/A"
     col1, col2 = st.columns(2)
     col1.metric("💈 Establecimientos Encontrados", f"{total_registros:,}")
     col2.metric("📍 Barrio Más Común", barrio_comun)
+
+    # Llamada a la nueva función de conclusiones
+    mostrar_conclusiones_dinamicas(df, df_filtrado, 'barrio', 'Barrio')
+    
     st.header("Análisis Visual Local")
+    # ... (código de gráficos sin cambios) ...
     st.subheader("Top 15 Barrios con más Establecimientos")
     conteo_barrio = df_filtrado['barrio'].value_counts().nlargest(15).reset_index()
     fig = px.bar(conteo_barrio, x='barrio', y='count', text_auto=True, title="Establecimientos por Barrio")
     st.plotly_chart(fig, use_container_width=True)
+    
     return df_filtrado
 
 # ==============================================================================
-# --- 4. APLICACIÓN PRINCIPAL ---
+# --- 5. APLICACIÓN PRINCIPAL ---
 # ==============================================================================
 def app():
     st.title("📈 Dashboard de Peluquerías y Salones de Belleza en Colombia")
