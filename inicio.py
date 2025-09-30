@@ -138,7 +138,7 @@ with col2:
     st.markdown("## Bienvenido al Panel de Gestión")
     st.markdown("Este es tu centro de control para administrar la barbería con eficiencia y estilo.")
     st.markdown("---")
-    st.markdown("#### **¿Qué puedes hacer?**\n- **📊 Dashboard:** Analiza métricas clave.\n- **🗓️ Gestión de Citas:** Organiza tu agenda.\n- **🤖 Asistente IA:** Crea comunicaciones únicas.")
+    st.markdown("#### **¿Qué puedes hacer?**\n- **📊 Dashboard:** Analiza métricas clave.\n- **🗓️ Gestión de Citas:** Organiza tu agenda.\n- **🤖 Asistente IA:** Crea comunicaciones únicas.\n- **📂 Datasets:** Analiza datos reales.")
 
 # --- Barra Lateral (Sidebar) ---
 if img_logo_path and os.path.exists(img_logo_path):
