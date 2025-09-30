@@ -39,14 +39,17 @@ def generar_analisis_ia_con_gemini(datos_filtrados_str):
     if not model: return "El modelo de IA no está disponible."
     try:
         prompt = f"""
-        Eres un analista de negocios experto para una cadena de barberías. Analiza los siguientes datos de citas:
-        {datos_filtrados_str}
-        Proporciona un análisis con:
-        1. **Resumen Ejecutivo:** Párrafo corto con hallazgos importantes.
-        2. **Observaciones Clave:** 3 a 5 puntos destacando tendencias.
-        3. **Recomendaciones Estratégicas:** 2 o 3 acciones concretas.
-        El tono debe ser profesional y orientado a la acción.
-        """
+Actúa como un analista de datos y estratega de negocios experto para la cadena de barberías, Kingdom Barber.
+A continuación, tu análisis debe basarse en esta lista de objetos.
+Datos: {datos_filtrados_str}
+
+Proporciona un análisis siguiendo esta estructura exacta:
+1. **Resumen Ejecutivo:** Un buen párrafo con los 2 hallazgos más importantes basado en los filtros aplicados. Cuantifica el hallazgo principal (ej. "el 60% de los ingresos...").
+2. **Observaciones Clave:** De 3 a 5 puntos. Cada punto DEBE estar respaldado por cifras, porcentajes o datos específicos del texto proporcionado.
+3. **Recomendaciones Estratégicas:** De 2 a 3 acciones concretas. Cada recomendación DEBE derivar lógicamente de una de las observaciones anteriores.
+
+El tono debe ser profesional y orientado a la acción. Basa el 100% de tu análisis estrictamente en los datos proporcionados y filtrados. No inventes información, eres profesional.
+"""
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
@@ -101,34 +104,45 @@ with tab_reportes:
             st.download_button(label="📥 Descargar Reporte PDF", data=pdf_bytes, file_name=f"Reporte_{sede_seleccionada.replace(' ', '_')}.pdf", mime="application/pdf")
 
 with tab_analista:
+    # (El resto de las pestañas no requieren cambios, sus prompts ya estaban mejorados)
     st.header("🕵️ Chatea con tus Datos")
-    st.markdown("Soy un agente de datos. Hazme cualquier pregunta y generaré el código para encontrar la respuesta.")
-    st.info(f"Tengo acceso a las **{len(df_filtrado)} citas** que coinciden con tus filtros.")
-    pregunta_usuario = st.text_input("Escribe tu pregunta aquí:", placeholder="Ej: ¿Cuál es el servicio que generó menos ingresos en Mayo?")
+    st.info(f"Tengo acceso a las **{len(df_filtrado)} citas** que coinciden con tus filtros. Hazme cualquier pregunta y generaré el código para encontrar la respuesta.")
+    pregunta_usuario = st.text_input("Escribe tu pregunta aquí:", placeholder="Ej: ¿Cuál es el servicio que generó menos ingresos?")
     if st.button("🤖 Analizar y Responder"):
-        if not model: st.error("No puedo conectarme con mi motor de IA en este momento.")
-        elif not pregunta_usuario: st.warning("Por favor, escribe una pregunta para que pueda analizar los datos.")
-        elif df_filtrado.empty: st.warning("No hay datos disponibles para los filtros que seleccionaste.")
+        if not model: st.error("No puedo conectarme con mi motor de IA.")
+        elif not pregunta_usuario: st.warning("Por favor, escribe una pregunta.")
+        elif df_filtrado.empty: st.warning("No hay datos disponibles para los filtros seleccionados.")
         else:
-            with st.spinner("Entendiendo tu pregunta y generando un plan de análisis... 🧠"):
+            with st.spinner("Generando plan de análisis... 🧠"):
                 columnas = df_filtrado.columns.tolist()
                 tipos_de_datos = df_filtrado.dtypes.to_string()
                 prompt_agente = f"""
-                Eres "Alex", un Agente de IA experto en análisis de datos con Pandas.
-                Tu objetivo es responder a la pregunta del usuario generando código Python para analizar un DataFrame llamado `df`.
-                **REGLAS ESTRICTAS:**
-                1. SOLO CÓDIGO: Tu respuesta debe ser únicamente un bloque de código Python.
-                2. USA `df`: El DataFrame a analizar se llama `df`.
-                3. DEVUELVE UN RESULTADO COMPLETO: El resultado final debe ser informativo.
-                4. IMPRIME EL RESULTADO: El código DEBE terminar con `print(resultado)`.
-                **COLUMNAS:** {columnas}
-                **TIPOS:** {tipos_de_datos}
-                **PREGUNTA:** "{pregunta_usuario}"
+                Actúa comoun Agente de IA experto en análisis de datos con Pandas.
+                Tu objetivo es generar un script de Python para responder la pregunta del usuario analizando un DataFrame llamado `df`.
+                
+                **Contexto del DataFrame `df`:**
+                - Contiene datos de citas de una barbería.
+                - 'Precio' representa ingresos.
+                - 'Fecha' es crucial para análisis de tiempo.
+                - 'Nombre_Completo_Barbero' y 'Nombre_Completo_Cliente' identifican a las personas.
+
+                **Reglas Estrictas:**
+                1.  **SOLO CÓDIGO:** Tu única respuesta debe ser un bloque de código Python. No incluyas explicaciones, solo el código.
+                2.  **USA `df`:** El DataFrame a analizar SIEMPRE se llama `df`.
+                3.  **CÓDIGO CLARO:** Añade comentarios breves en el código para explicar los pasos.
+                4.  **IMPRIME EL RESULTADO:** El código DEBE terminar con una línea `print(resultado)` que muestre la respuesta final de forma clara.
+
+                **Información del DataFrame disponible:**
+                - COLUMNAS: {columnas}
+                - TIPOS DE DATOS: {tipos_de_datos}
+
+                **Pregunta del Usuario a Responder:**
+                "{pregunta_usuario}"
                 """
                 try:
                     respuesta_ia = model.generate_content(prompt_agente)
                     codigo_generado = respuesta_ia.text.strip().replace("```python", "").replace("```", "")
-                    with st.expander("🔍 Ver el Plan de Análisis (código generado por la IA)"):
+                    with st.expander("🔍 Ver el Plan de Análisis (código generado)"):
                         st.code(codigo_generado, language='python')
                     with st.spinner("Ejecutando el análisis... ⚙️"):
                         df = df_filtrado
@@ -137,10 +151,19 @@ with tab_analista:
                         resultado_analisis = sys.stdout.getvalue()
                         sys.stdout = old_stdout
                     with st.spinner("Interpretando los resultados... 🗣️"):
-                        prompt_interprete = f"""Eres "Alex", un asistente amigable. Responde la pregunta del usuario de forma clara, basándote en el resultado.
-                        Pregunta Original: "{pregunta_usuario}"
-                        Resultado del Análisis: --- {resultado_analisis} ---
-                        Tu respuesta final:
+                        prompt_interprete = f"""
+                        Eres "Alex", un asistente de datos amigable. Responde la pregunta del usuario de forma clara y directa, basándote en el resultado del análisis.
+                        
+                        **Pregunta Original del Usuario:**
+                        "{pregunta_usuario}"
+                        
+                        **Resultado del Código (Datos Crudos):**
+                        ---
+                        {resultado_analisis}
+                        ---
+                        
+                        **Tu Respuesta Final:**
+                        Empieza con una respuesta directa. Luego, si es apropiado, añade un breve contexto o explicación.
                         """
                         respuesta_final_ia = model.generate_content(prompt_interprete)
                         st.markdown("### 💡 Aquí está tu análisis:")
@@ -166,8 +189,27 @@ with tab_marketing:
                     servicio_menos_popular = df_filtrado['Nombre_Servicio'].value_counts().idxmin()
                     dia_mas_flojo = df_filtrado['Fecha'].dt.day_name().value_counts().idxmin()
                 except Exception:
-                    servicio_menos_popular, dia_mas_flojo = "n/a", "n/a"
-                prompt_marketing = f"""Eres un experto en marketing para barberías. El objetivo es: {tipo_campaña}. El canal es: {canal_comunicacion}. Un servicio con pocas citas es: {servicio_menos_popular}. Un día flojo es: {dia_mas_flojo}. Basado en esto, dame un borrador para una campaña con: 1. **Nombre Campaña**. 2. **Público Objetivo**. 3. **Mensaje Principal**. 4. **Sugerencia Adicional**. Formatea en Markdown."""
+                    servicio_menos_popular, dia_mas_flojo = "N/A", "N/A"
+                prompt_marketing = f"""
+                Actúa como un Director Creativo y Estratega de Marketing para la barbería 'Kingdom Barber'.
+                Tu tarea es crear un borrador para una campaña de marketing.
+                
+                **INPUTS ESTRATÉGICOS:**
+                - **Objetivo Principal:** {tipo_campaña}
+                - **Canal de Difusión:** {canal_comunicacion}
+                - **Insight de Datos 1 (Servicio a Potenciar):** {servicio_menos_popular}
+                - **Insight de Datos 2 (Día de Baja Afluencia):** {dia_mas_flojo}
+
+                **OUTPUT REQUERIDO (Formato Markdown):**
+                Usa un tono creativo, masculino y directo.
+                
+                ###  Nombre de la Campaña
+                - **Slogan:** Un eslogan corto y pegadizo.
+                - **Público Objetivo:** ¿A quién nos dirigimos principalmente?
+                - **Mensaje para {canal_comunicacion}:** Escribe el texto exacto para el post, email o mensaje de WhatsApp. Debe ser conciso y persuasivo.
+                - **Llamada a la Acción (CTA):** ¿Qué queremos que haga el cliente?
+                - **Sugerencia Creativa:** Una idea adicional (ej. un hashtag, tipo de imagen, colaboración).
+                """
                 try:
                     respuesta_ia = model.generate_content(prompt_marketing)
                     st.markdown(respuesta_ia.text)
@@ -200,9 +242,10 @@ with tab_oportunidades:
                 except Exception as e:
                     st.error(f"No se pudo generar el análisis de oportunidades: {e}")
 
+
 with tab_asesor:
     st.header("✂️ Asesor de Estilo Virtual con IA")
-    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello.")
+    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello y estilos que te favorezcan.")
     uploaded_file = st.file_uploader("Sube una foto donde tu rostro se vea claramente", type=["jpg", "jpeg", "png"], key="style_uploader")
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
@@ -218,12 +261,25 @@ with tab_asesor:
                     with st.spinner("Analizando tus rasgos... 🧐"):
                         try:
                             prompt_parts = [
-                                "Eres un estilista experto en visagismo. Analiza la imagen, identifica la forma del rostro, y recomienda 3 cortes de cabello masculinos que favorezcan, explicando por qué, su nivel de mantenimiento y un link de búsqueda en Google para cada uno. Formatea en Markdown.",
+                                """
+                                Actúa como un estilista de élite y experto en visagismo masculino. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen completa.
+                                
+                                **Tu Tarea (formato Markdown):**
+                                1.  **Diagnóstico del Rostro:** Primero, identifica la forma del rostro (ej. Ovalado, Cuadrado, Redondo, etc.).
+                                2.  **Recomendaciones de Cortes (Top 3):**
+                                    - **Nombre del Estilo:** (ej. Pompadour Clásico, Buzz Cut, Quiff Texturizado).
+                                    - **¿Por qué te favorece?:** Explica brevemente cómo el corte complementa la forma del rostro.
+                                    - **Nivel de Mantenimiento:** (Bajo, Medio, Alto).
+                                    - **Productos Recomendados:** Sugiere un tipo de producto ideal (ej. Cera mate, pomada base agua, spray de sal marina).
+                                    - **Inspiración Visual:** Proporciona un enlace de búsqueda de Google Images para que el cliente vea ejemplos. Usa el formato: `[Ver Ejemplos](https://www.google.com/search?q=...&tbm=isch)`
+                                
+                                Sé profesional, alentador y específico en tus recomendaciones.
+                                """,
                                 image,
                             ]
                             response = model.generate_content(prompt_parts)
                             st.divider()
-                            st.markdown("### 💈 Mis recomendaciones:")
+                            st.markdown("### 💈 Mis recomendaciones para ti:")
                             st.markdown(response.text)
                             st.link_button("📅 ¡Reserva tu cita ahora!", "http://localhost:3000", type="primary")
                         except Exception as e:
