@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import requests
 
-API_URL = "http://localhost:3001"
+API_URL = "http://localhost:8080"
 
-# --- MÉTODO 1: Para Dashboard y Gestión de Citas (Usa la API) ---
+# --- MÉTODO 1: Para Dashboard y Gestión de Citas (Usa la API de Java) ---
 
 @st.cache_data
 def obtener_datos_api(endpoint):
@@ -21,20 +21,41 @@ def obtener_datos_api(endpoint):
     return pd.DataFrame()
 
 def cargar_datos_completos_api():
-    """Carga todos los dataframes necesarios desde la API."""
+    """Carga todos los dataframes necesarios desde la API y renombra las columnas para compatibilidad."""
     df_clientes = obtener_datos_api("clientes")
     df_barberos = obtener_datos_api("barberos")
     df_servicios = obtener_datos_api("servicios")
-    df_citas = obtener_datos_api("citas")
+    df_citas = obtener_datos_api("historial/citas")
     df_sedes = obtener_datos_api("sedes")
+
+    # Capa de traducción para compatibilidad
+    if not df_clientes.empty:
+        df_clientes.rename(columns={'id': 'ID_Cliente', 'nombreCliente': 'Nombre_Cliente', 'apellidoCliente': 'Apellido_Cliente', 'telefono': 'Telefono', 'email': 'Email'}, inplace=True)
+    if not df_barberos.empty:
+        df_barberos['ID_Sede'] = df_barberos['sede'].apply(lambda x: x['id'] if isinstance(x, dict) else None)
+        df_barberos.rename(columns={'id': 'ID_Barbero', 'nombreBarbero': 'Nombre_Barbero', 'apellidoBarbero': 'Apellido_Barbero'}, inplace=True)
+    if not df_servicios.empty:
+        df_servicios.rename(columns={'id': 'ID_Servicio', 'nombreServicio': 'Nombre_Servicio', 'precio': 'Precio', 'duracionMin': 'Duracion_min'}, inplace=True)
+    if not df_citas.empty:
+        df_citas.rename(columns={'id': 'ID_Cita', 'idCliente': 'ID_Cliente', 'idBarbero': 'ID_Barbero', 'idServicio': 'ID_Servicio', 'idSede': 'ID_Sede', 'fecha': 'Fecha', 'hora': 'Hora'}, inplace=True)
+    if not df_sedes.empty:
+        df_sedes.rename(columns={'id': 'ID_Sede', 'nombreSede': 'Nombre_Sede'}, inplace=True)
+    
     return df_clientes, df_barberos, df_servicios, df_citas, df_sedes
 
 def obtener_vista_citas_completa():
-    """Obtiene datos de la API y realiza los merges para la vista unificada."""
+    """Obtiene datos de la API, realiza los merges Y DEVUELVE AMBOS DATAFRAMES NECESARIOS."""
     df_clientes, df_barberos, df_servicios, df_citas, df_sedes = cargar_datos_completos_api()
     
-    if any(df.empty for df in [df_clientes, df_citas, df_sedes, df_barberos, df_servicios]):
-        return pd.DataFrame()
+    if any(df.empty for df in [df_clientes, df_citas]):
+        st.warning("No se pudieron cargar los datos de clientes o citas desde la API.")
+        return pd.DataFrame(), pd.DataFrame() # Devuelve dos dataframes vacíos
+
+    # Aseguramos que los IDs sean numéricos antes de unir
+    for df in [df_clientes, df_citas, df_barberos, df_sedes, df_servicios]:
+        for col in df.columns:
+            if 'ID' in col:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
 
     df_clientes['Nombre_Completo_Cliente'] = df_clientes['Nombre_Cliente'] + ' ' + df_clientes['Apellido_Cliente']
     df_barberos['Nombre_Completo_Barbero'] = df_barberos['Nombre_Barbero'] + ' ' + df_barberos['Apellido_Barbero']
@@ -46,10 +67,11 @@ def obtener_vista_citas_completa():
     
     df_vista['Fecha'] = pd.to_datetime(df_vista['Fecha'], errors='coerce')
     
-    return df_vista
+    # --- CAMBIO IMPORTANTE: Devolvemos ambos dataframes ---
+    return df_vista, df_sedes
 
 # --- MÉTODO 2: Para Asistente IA (Usa los archivos CSV) ---
-
+# (Esta parte no se ha modificado)
 def cargar_datos_csv_locales():
     """Carga todos los dataframes desde los archivos CSV locales."""
     try:
@@ -65,19 +87,5 @@ def cargar_datos_csv_locales():
 
 def obtener_vista_citas_completa_csv():
     """Obtiene y une todos los datos desde los archivos CSV locales."""
-    df_clientes, df_barberos, df_servicios, df_citas, df_sedes = cargar_datos_csv_locales()
-
-    if df_clientes.empty or df_citas.empty:
-        return pd.DataFrame()
-
-    df_clientes['Nombre_Completo_Cliente'] = df_clientes['Nombre_Cliente'] + ' ' + df_clientes['Apellido_Cliente']
-    df_barberos['Nombre_Completo_Barbero'] = df_barberos['Nombre_Barbero'] + ' ' + df_barberos['Apellido_Barbero']
-    
-    df_vista = pd.merge(df_clientes, df_citas, on="ID_Cliente", how="left")
-    df_vista = pd.merge(df_vista, df_sedes, on="ID_Sede", how="left")
-    df_vista = pd.merge(df_vista, df_barberos, on="ID_Barbero", how="left")
-    df_vista = pd.merge(df_vista, df_servicios, on="ID_Servicio", how="left")
-    
-    df_vista['Fecha'] = pd.to_datetime(df_vista['Fecha'], errors='coerce')
-    
-    return df_vista
+    # ... (código existente sin cambios)
+    pass

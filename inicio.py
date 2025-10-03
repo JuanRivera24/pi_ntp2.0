@@ -64,8 +64,8 @@ def run_diagnostics():
 
     # TEST 3: Conexión a tu API Local
     st.subheader("3. Prueba de Conexión a la API Local")
-    API_URL = "http://localhost:3001"
-    endpoints = ["clientes", "citas", "barberos", "sedes", "servicios"]
+    API_URL = "http://localhost:8080"
+    endpoints = ["clientes", "historial/citas", "barberos", "sedes", "servicios"]
     with st.spinner("Probando conexión con los endpoints de la API..."):
         all_successful = True
         for endpoint in endpoints:

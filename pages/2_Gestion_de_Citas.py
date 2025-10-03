@@ -9,14 +9,15 @@ st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🗓️ Gestión de
 st.markdown("### Filtra, busca y gestiona todas las citas de la barbería.")
 st.markdown("---")
 
-# Usamos la misma función que el dashboard para obtener los datos ya procesados
-df_vista = dm.obtener_vista_citas_completa()
-df_sedes = dm.obtener_datos_api("sedes") # Obtenemos sedes para el filtro
+# --- CORRECCIÓN ---
+# La función ahora devuelve dos DataFrames, los "desempaquetamos" en dos variables.
+df_vista, df_sedes = dm.obtener_vista_citas_completa()
 
 if df_vista.empty:
-    st.error("No se pudieron cargar los datos de citas desde la API. Asegúrate de que la API esté corriendo.")
+    st.error("No se pudieron cargar los datos de citas desde la API. Asegúrate de que la API de Java esté corriendo.")
     st.stop()
 
+# --- El resto del código funciona con las variables correctas ---
 st.sidebar.header("🔍 Filtros Avanzados")
 
 lista_sedes = ['Todas'] + df_sedes['Nombre_Sede'].unique().tolist()
