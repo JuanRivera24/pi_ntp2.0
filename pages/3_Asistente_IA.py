@@ -1,142 +1,188 @@
 import streamlit as st
 import pandas as pd
-from data_manager import obtener_vista_citas_completa
+import data_manager as dm
 from report_generator import generar_pdf_reporte
 import google.generativeai as genai
 import traceback
 from io import StringIO
 import sys
 from PIL import Image
+from datetime import datetime
+import locale
 
-# --- Configuración de la Página ---
+# --- 1. CONFIGURACIÓN DE PÁGINA Y CONEXIÓN A LA IA ---
 st.set_page_config(page_title="Asistente IA", page_icon="🤖", layout="wide")
 st.title("🤖 Asistente de Inteligencia Artificial")
 st.markdown("Tu centro de mando para análisis avanzados, reportes y marketing inteligente.")
 
-# --- Cargar y cachear los datos desde la API ---
-@st.cache_data
-def cargar_datos():
-    return obtener_vista_citas_completa()
-
-df_citas_completa = cargar_datos()
-
-if df_citas_completa.empty:
-    st.error("No se pudieron cargar los datos desde la API. Asegúrate de que la API (index.js) esté corriendo.")
-    st.stop()
-
-# --- Conexión al API de Gemini con el modelo correcto ---
 model = None
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    # --- LA SOLUCIÓN DEFINITIVA: Usamos un nombre de la lista que nos dio el diagnóstico ---
+    # Se mantiene tu modelo de IA especificado
     model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
 except Exception as e:
     st.error(f"No se pudo configurar la conexión con Google Gemini. Verifica tu API Key. Error: {e}")
 
-# --- Función para generar análisis de reportes ---
-def generar_analisis_ia_con_gemini(datos_filtrados_str):
-    if not model: return "El modelo de IA no está disponible."
-    try:
-        prompt = f"""
-Actúa como un analista de datos y estratega de negocios experto para la cadena de barberías, Kingdom Barber.
-A continuación, tu análisis debe basarse en esta lista de objetos.
-Datos: {datos_filtrados_str}
+# --- 2. CARGA DE DATOS CENTRALIZADA DESDE LA API ---
+@st.cache_data
+def cargar_datos_completos():
+    """Llama al data_manager una sola vez para obtener todos los datos."""
+    return dm.obtener_vista_citas_completa()
 
-Proporciona un análisis siguiendo esta estructura exacta:
-1. **Resumen Ejecutivo:** Un buen párrafo con los 2 hallazgos más importantes basado en los filtros aplicados. Cuantifica el hallazgo principal (ej. "el 60% de los ingresos...").
-2. **Observaciones Clave:** De 3 a 5 puntos. Cada punto DEBE estar respaldado por cifras, porcentajes o datos específicos del texto proporcionado.
-3. **Recomendaciones Estratégicas:** De 2 a 3 acciones concretas. Cada recomendación DEBE derivar lógicamente de una de las observaciones anteriores.
+df_vista_completa, df_sedes = cargar_datos_completos()
 
-El tono debe ser profesional y orientado a la acción. Basa el 100% de tu análisis estrictamente en los datos proporcionados y filtrados. No inventes información, eres profesional.
-"""
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        traceback.print_exc()
-        return "No se pudo generar el análisis debido a un error de conexión con la IA."
+if df_vista_completa.empty:
+    st.error("No se pudieron cargar los datos desde la API. Asegúrate de que la API de Java esté corriendo.")
+    st.stop()
 
-# --- Barra Lateral de Filtros ---
+# --- 3. FILTROS GLOBALES EN LA BARRA LATERAL ---
 with st.sidebar:
-    st.header("Filtros para el Reporte")
-    df_citas_completa['Fecha'] = pd.to_datetime(df_citas_completa['Fecha'], errors='coerce')
-    sedes_disponibles = ["Todas"] + df_citas_completa['Nombre_Sede'].dropna().unique().tolist()
-    sede_seleccionada = st.selectbox("Selecciona una Sede", sedes_disponibles)
-    fechas_validas = df_citas_completa['Fecha'].dropna()
-    min_date = fechas_validas.min().date() if not fechas_validas.empty else pd.Timestamp.now().date()
-    max_date = fechas_validas.max().date() if not fechas_validas.empty else pd.Timestamp.now().date()
+    st.header("Filtros Globales")
+    
+    lista_sedes_ia = ['Todas'] + df_sedes['Nombre_Sede'].dropna().unique().tolist()
+    sede_seleccionada = st.selectbox("Selecciona una Sede", lista_sedes_ia, key="sede_ia")
+    
+    fechas_validas = df_vista_completa['Fecha'].dropna()
+    min_date = fechas_validas.min().date() if not fechas_validas.empty else datetime.now().date()
+    max_date = fechas_validas.max().date() if not fechas_validas.empty else datetime.now().date()
     if min_date > max_date: min_date = max_date
-    rango_fechas = st.date_input("Selecciona un Rango de Fechas", value=(min_date, max_date), min_value=min_date, max_value=max_date)
-    barberos_disponibles = ["Todos"] + sorted(df_citas_completa['Nombre_Completo_Barbero'].dropna().unique().tolist())
-    barbero_seleccionado = st.selectbox("Selecciona un Barbero", barberos_disponibles)
-    servicios_disponibles = ["Todos"] + sorted(df_citas_completa['Nombre_Servicio'].dropna().unique().tolist())
-    servicio_seleccionado = st.selectbox("Selecciona un Servicio", servicios_disponibles)
+    rango_fechas = st.date_input("Selecciona un Rango de Fechas", value=(min_date, max_date), min_value=min_date, max_value=max_date, key="date_ia")
+    
+    lista_barberos_ia = ['Todos'] + sorted(df_vista_completa['Nombre_Completo_Barbero'].dropna().unique().tolist())
+    barbero_seleccionado = st.selectbox("Selecciona un Barbero", lista_barberos_ia, key="barbero_ia")
+    
+    lista_servicios_ia = ['Todos'] + sorted(df_vista_completa['Nombre_Servicio'].dropna().unique().tolist())
+    servicio_seleccionado = st.selectbox("Selecciona un Servicio", lista_servicios_ia, key="servicio_ia")
 
-# --- Aplicar filtros a los datos ---
-df_filtrado = df_citas_completa.copy()
+# --- 4. APLICACIÓN DE FILTROS ---
+df_filtrado = df_vista_completa.copy()
 if sede_seleccionada != "Todas": df_filtrado = df_filtrado[df_filtrado['Nombre_Sede'] == sede_seleccionada]
+
 if len(rango_fechas) == 2:
-    fecha_inicio, fecha_fin = pd.to_datetime(rango_fechas[0]), pd.to_datetime(rango_fechas[1])
-    df_filtrado = df_filtrado.dropna(subset=['Fecha'])
-    df_filtrado = df_filtrado[(df_filtrado['Fecha'] >= fecha_inicio) & (df_filtrado['Fecha'] <= fecha_fin)]
+    fecha_inicio, fecha_fin = rango_fechas
+    df_filtrado['Fecha'] = pd.to_datetime(df_filtrado['Fecha'], errors='coerce')
+    df_filtrado.dropna(subset=['Fecha'], inplace=True)
+    df_filtrado = df_filtrado[
+        (df_filtrado['Fecha'].dt.date >= fecha_inicio) & 
+        (df_filtrado['Fecha'].dt.date <= fecha_fin)
+    ]
+
 if barbero_seleccionado != "Todos": df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Barbero'] == barbero_seleccionado]
 if servicio_seleccionado != "Todos": df_filtrado = df_filtrado[df_filtrado['Nombre_Servicio'] == servicio_seleccionado]
 
-# --- Interfaz Principal con Pestañas ---
+# --- 5. INTERFAZ DE PESTAÑAS ---
 tab_reportes, tab_analista, tab_marketing, tab_oportunidades, tab_asesor = st.tabs([
     "📈 Generador de Reportes", "🕵️ Analista de Datos Interactivo", "🎯 Asistente de Marketing",
     "💎 Detector de Oportunidades", "✂️ Asesor de Estilo Virtual"
 ])
 
+# --- PESTAÑA 1: GENERADOR DE REPORTES ---
 with tab_reportes:
     st.header("Generador de Reportes a Medida")
-    st.markdown("Selecciona los filtros y haz clic en el botón para generar un reporte en PDF con análisis de IA.")
-    if st.button("🚀 Generar Reporte PDF"):
+    st.info(f"El reporte se generará basado en las **{len(df_filtrado)} citas** que coinciden con tus filtros actuales.")
+    
+    def generar_analisis_reporte(resumen_str):
+        if not model: return "El modelo de IA no está disponible."
+        
+        # Corrección 1: Se obtiene la fecha actual para el prompt
+        try:
+            locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+        except locale.Error:
+            locale.setlocale(locale.LC_TIME, 'Spanish')
+        fecha_actual = datetime.now().strftime("%d de %B de %Y")
+
+        prompt = f"""
+        Actúa como un analista de negocios para Kingdom Barber.
+        Tu tarea es tomar el siguiente resumen de datos y convertirlo en un informe profesional.
+
+        **Contexto del Informe:**
+        - **Fecha de Generación:** {fecha_actual}
+        - **Para:** Dirección de Kingdom Barber
+        - **De:** Analista de Negocios de IA
+
+        **Resumen de Datos (KPIs):**
+        {resumen_str}
+
+        **Estructura del Informe (Usa Markdown):**
+        ### Informe de Análisis de Rendimiento
+        - (Incluye la fecha, para y de que te di en el contexto)
+        ---
+        #### 1. Resumen Ejecutivo
+        Párrafo corto con los hallazgos más críticos.
+        #### 2. Observaciones Clave
+        3 puntos destacando tendencias basadas en el resumen.
+        #### 3. Recomendaciones Estratégicas
+        2 acciones concretas basadas en las observaciones.
+        """
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            return f"Error al generar análisis: {e}"
+
+    if st.button("🚀 Generar Reporte PDF", key="report_btn"):
         if df_filtrado.empty:
             st.warning("No hay datos para los filtros seleccionados.")
         else:
-            with st.spinner("Preparando datos y consultando a la IA... 🤖"):
-                analisis_ia = generar_analisis_ia_con_gemini(df_filtrado.head(50).to_string())
+            with st.spinner("Analizando KPIs y consultando a la IA... 🤖"):
+                total_ingresos = df_filtrado['Precio'].sum()
+                total_citas = len(df_filtrado)
+                ingresos_por_barbero = df_filtrado.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
+                citas_por_servicio = df_filtrado['Nombre_Servicio'].value_counts().nlargest(5)
+                
+                resumen_de_datos = f"""
+                - Total de Citas: {total_citas}
+                - Ingresos Totales: ${total_ingresos:,.0f} COP
+                - Top 5 Barberos por Ingresos: {ingresos_por_barbero.to_dict()}
+                - Top 5 Servicios por Cantidad: {citas_por_servicio.to_dict()}
+                """
+                
+                analisis_ia = generar_analisis_reporte(resumen_de_datos)
+            
             with st.spinner("Creando el archivo PDF... 📄"):
                 contexto_reporte = {"sede": sede_seleccionada, "rango_fechas": f"{rango_fechas[0].strftime('%d/%m/%Y')} - {rango_fechas[1].strftime('%d/%m/%Y')}", "barbero": barbero_seleccionado, "servicio": servicio_seleccionado}
                 pdf_bytes = generar_pdf_reporte(df_filtrado, analisis_ia, contexto_reporte)
+            
             st.success("¡Reporte generado con éxito!")
-            st.download_button(label="📥 Descargar Reporte PDF", data=pdf_bytes, file_name=f"Reporte_{sede_seleccionada.replace(' ', '_')}.pdf", mime="application/pdf")
+            st.download_button(label="📥 Descargar Reporte PDF", data=pdf_bytes, file_name="Reporte_IA.pdf", mime="application/pdf")
 
+# --- PESTAÑA 2: ANALISTA DE DATOS INTERACTIVO (CORREGIDA) ---
 with tab_analista:
-    # (El resto de las pestañas no requieren cambios, sus prompts ya estaban mejorados)
     st.header("🕵️ Chatea con tus Datos")
-    st.info(f"Tengo acceso a las **{len(df_filtrado)} citas** que coinciden con tus filtros. Hazme cualquier pregunta y generaré el código para encontrar la respuesta.")
-    pregunta_usuario = st.text_input("Escribe tu pregunta aquí:", placeholder="Ej: ¿Cuál es el servicio que generó menos ingresos?")
-    if st.button("🤖 Analizar y Responder"):
-        if not model: st.error("No puedo conectarme con mi motor de IA.")
+    st.info(f"Tengo acceso a las **{len(df_filtrado)} citas** que coinciden con tus filtros. Hazme cualquier pregunta.")
+    pregunta_usuario = st.text_input("Escribe tu pregunta aquí:", placeholder="Ej: ¿Cuál es el mes de más ganancias?", key="analista_input")
+    
+    if st.button("🤖 Analizar y Responder", key="analista_btn"):
+        if not model: st.error("Motor de IA no disponible.")
         elif not pregunta_usuario: st.warning("Por favor, escribe una pregunta.")
-        elif df_filtrado.empty: st.warning("No hay datos disponibles para los filtros seleccionados.")
+        elif df_filtrado.empty: st.warning("No hay datos para los filtros seleccionados.")
         else:
             with st.spinner("Generando plan de análisis... 🧠"):
                 columnas = df_filtrado.columns.tolist()
                 tipos_de_datos = df_filtrado.dtypes.to_string()
+                
+                # --- PROMPT MEJORADO CON NUEVA REGLA DE CONTEXTO ---
                 prompt_agente = f"""
-                Actúa comoun Agente de IA experto en análisis de datos con Pandas.
+                Actúa como 'Alex', un Agente de IA experto en análisis de datos con Pandas.
                 Tu objetivo es generar un script de Python para responder la pregunta del usuario analizando un DataFrame llamado `df`.
                 
                 **Contexto del DataFrame `df`:**
-                - Contiene datos de citas de una barbería.
-                - 'Precio' representa ingresos.
-                - 'Fecha' es crucial para análisis de tiempo.
-                - 'Nombre_Completo_Barbero' y 'Nombre_Completo_Cliente' identifican a las personas.
+                - Contiene datos de citas de una barbería. 'Precio' es ingresos. 'Fecha' es para análisis de tiempo.
 
                 **Reglas Estrictas:**
-                1.  **SOLO CÓDIGO:** Tu única respuesta debe ser un bloque de código Python. No incluyas explicaciones, solo el código.
-                2.  **USA `df`:** El DataFrame a analizar SIEMPRE se llama `df`.
-                3.  **CÓDIGO CLARO:** Añade comentarios breves en el código para explicar los pasos.
-                4.  **IMPRIME EL RESULTADO:** El código DEBE terminar con una línea `print(resultado)` que muestre la respuesta final de forma clara.
+                1. SOLO CÓDIGO: Tu única respuesta debe ser código Python.
+                2. USA `df`: El DataFrame a analizar SIEMPRE se llama `df`.
+                3. IMPRIME EL RESULTADO: El código DEBE terminar con `print(resultado)`.
+                4. CÓDIGO CLARO: Añade comentarios breves para explicar los pasos.
+                5. FORMATO DE FECHA: Si la pregunta involucra fechas (meses, años), el resultado impreso DEBE incluir el año (ej. 'Febrero 2025').
+                6. **PROVEE CONTEXTO:** Siempre que sea posible, además de la respuesta directa, imprime datos adicionales que le den contexto. Por ejemplo, si la pregunta es sobre el mes con más ganancias, el código no solo debe imprimir el mes, sino también el monto de esas ganancias.
 
-                **Información del DataFrame disponible:**
+                **Información del DataFrame:**
                 - COLUMNAS: {columnas}
                 - TIPOS DE DATOS: {tipos_de_datos}
 
-                **Pregunta del Usuario a Responder:**
+                **Pregunta del Usuario:**
                 "{pregunta_usuario}"
                 """
                 try:
@@ -144,16 +190,18 @@ with tab_analista:
                     codigo_generado = respuesta_ia.text.strip().replace("```python", "").replace("```", "")
                     with st.expander("🔍 Ver el Plan de Análisis (código generado)"):
                         st.code(codigo_generado, language='python')
+                    
                     with st.spinner("Ejecutando el análisis... ⚙️"):
-                        df = df_filtrado
+                        df = df_filtrado.copy() # Usamos una copia para seguridad
                         old_stdout, sys.stdout = sys.stdout, StringIO()
                         exec(codigo_generado, {'pd': pd, 'df': df})
                         resultado_analisis = sys.stdout.getvalue()
                         sys.stdout = old_stdout
+                    
                     with st.spinner("Interpretando los resultados... 🗣️"):
                         prompt_interprete = f"""
-                        Eres "Alex", un asistente de datos amigable. Responde la pregunta del usuario de forma clara y directa, basándote en el resultado del análisis.
-                        
+                        Eres "Alex", un asistente de datos amigable y experto. Responde la pregunta del usuario de forma conversacional y completa, usando los datos del resultado del análisis. Explica el resultado de forma clara.
+
                         **Pregunta Original del Usuario:**
                         "{pregunta_usuario}"
                         
@@ -163,7 +211,6 @@ with tab_analista:
                         ---
                         
                         **Tu Respuesta Final:**
-                        Empieza con una respuesta directa. Luego, si es apropiado, añade un breve contexto o explicación.
                         """
                         respuesta_final_ia = model.generate_content(prompt_interprete)
                         st.markdown("### 💡 Aquí está tu análisis:")
@@ -172,15 +219,17 @@ with tab_analista:
                     st.error("¡Oops! Ocurrió un error al procesar tu pregunta.")
                     st.exception(e)
 
+# --- PESTAÑA 3: ASISTENTE DE MARKETING ---
 with tab_marketing:
     st.header("🎯 Asistente de Marketing Inteligente")
-    st.markdown("Genera ideas y borradores para tus campañas de marketing basados en los datos.")
+    st.markdown("Genera ideas para tus campañas de marketing basados en los datos filtrados.")
     col1, col2 = st.columns(2)
     with col1:
-        tipo_campaña = st.selectbox("Selecciona el objetivo de la campaña:", ["Atraer nuevos clientes", "Fidelizar clientes existentes", "Promocionar un servicio poco popular", "Aumentar citas en días flojos"])
+        tipo_campaña = st.selectbox("Selecciona el objetivo de la campaña:", ["Atraer nuevos clientes", "Fidelizar clientes existentes", "Promocionar un servicio poco popular", "Aumentar citas en días flojos"], key="marketing_objetivo")
     with col2:
-        canal_comunicacion = st.radio("Selecciona el canal:", ("WhatsApp", "Email", "Redes Sociales"), horizontal=True)
-    if st.button("💡 Generar Idea de Campaña"):
+        canal_comunicacion = st.radio("Selecciona el canal:", ("WhatsApp", "Email", "Redes Sociales"), horizontal=True, key="marketing_canal")
+    
+    if st.button("💡 Generar Idea de Campaña", key="marketing_btn"):
         if not model: st.error("El modelo de IA no está disponible.")
         elif df_filtrado.empty: st.warning("No hay suficientes datos para generar una idea.")
         else:
@@ -190,25 +239,22 @@ with tab_marketing:
                     dia_mas_flojo = df_filtrado['Fecha'].dt.day_name().value_counts().idxmin()
                 except Exception:
                     servicio_menos_popular, dia_mas_flojo = "N/A", "N/A"
+                
                 prompt_marketing = f"""
-                Actúa como un Director Creativo y Estratega de Marketing para la barbería 'Kingdom Barber'.
-                Tu tarea es crear un borrador para una campaña de marketing.
-                
+                Actúa como un Director Creativo para 'Kingdom Barber'. Crea un borrador para una campaña de marketing.
                 **INPUTS ESTRATÉGICOS:**
-                - **Objetivo Principal:** {tipo_campaña}
-                - **Canal de Difusión:** {canal_comunicacion}
-                - **Insight de Datos 1 (Servicio a Potenciar):** {servicio_menos_popular}
-                - **Insight de Datos 2 (Día de Baja Afluencia):** {dia_mas_flojo}
-
+                - Objetivo: {tipo_campaña}
+                - Canal: {canal_comunicacion}
+                - Insight 1 (Servicio a Potenciar): {servicio_menos_popular}
+                - Insight 2 (Día de Baja Afluencia): {dia_mas_flojo}
                 **OUTPUT REQUERIDO (Formato Markdown):**
-                Usa un tono creativo, masculino y directo.
-                
-                ###  Nombre de la Campaña
+                Usa un tono creativo y directo.
+                ### Nombre de la Campaña
                 - **Slogan:** Un eslogan corto y pegadizo.
-                - **Público Objetivo:** ¿A quién nos dirigimos principalmente?
-                - **Mensaje para {canal_comunicacion}:** Escribe el texto exacto para el post, email o mensaje de WhatsApp. Debe ser conciso y persuasivo.
-                - **Llamada a la Acción (CTA):** ¿Qué queremos que haga el cliente?
-                - **Sugerencia Creativa:** Una idea adicional (ej. un hashtag, tipo de imagen, colaboración).
+                - **Público Objetivo:**
+                - **Mensaje para {canal_comunicacion}:** El texto exacto.
+                - **Llamada a la Acción (CTA):**
+                - **Sugerencia Creativa:**
                 """
                 try:
                     respuesta_ia = model.generate_content(prompt_marketing)
@@ -216,37 +262,50 @@ with tab_marketing:
                 except Exception as e:
                     st.error(f"Ocurrió un error al generar la campaña: {e}")
 
+# --- PESTAÑA 4: DETECTOR DE OPORTUNIDADES ---
 with tab_oportunidades:
     st.header("💎 Detector de Oportunidades Personalizadas")
-    st.markdown("Selecciona áreas de interés y analizaré los datos para encontrar insights accionables.")
-    opciones_analisis = st.multiselect("Selecciona qué oportunidades quieres buscar:", ["Clientes en Riesgo de Abandono", "Oportunidades de Venta Cruzada (Cross-selling)", "Optimización de Servicios", "Rendimiento de Barberos", "Mejorar Días de Baja Demanda"], default=["Clientes en Riesgo de Abandono", "Optimización de Servicios"])
-    if st.button("🔍 Encontrar Oportunidades Seleccionadas"):
+    st.markdown("Analizaré los datos filtrados para encontrar insights de negocio accionables.")
+    opciones_analisis = st.multiselect("Selecciona qué oportunidades quieres buscar:", ["Clientes en Riesgo de Abandono", "Oportunidades de Venta Cruzada (Cross-selling)", "Optimización de Servicios", "Rendimiento de Barberos"], default=["Clientes en Riesgo de Abandono"], key="oportunidades_multi")
+    
+    if st.button("🔍 Encontrar Oportunidades", key="oportunidades_btn"):
         if not model: st.error("El modelo de IA no está disponible.")
-        elif df_filtrado.empty or not opciones_analisis: st.warning("Selecciona al menos un área de interés y asegúrate de que haya datos filtrados.")
+        elif df_filtrado.empty or not opciones_analisis: st.warning("Selecciona un área y asegúrate de que haya datos.")
         else:
-            with st.spinner("Buscando insights valiosos... 💎"):
+            with st.spinner("Calculando insights y consultando a la IA... 💎"):
+                resumen_oportunidades = f"Áreas de interés seleccionadas: {', '.join(opciones_analisis)}\n"
+                
                 try:
-                    df_filtrado['Fecha'] = pd.to_datetime(df_filtrado['Fecha'])
-                    datos_clave_str = ""
-                    try:
+                    if "Clientes en Riesgo de Abandono" in opciones_analisis:
                         fecha_maxima = df_filtrado['Fecha'].max()
                         clientes_recientes = df_filtrado[df_filtrado['Fecha'] > (fecha_maxima - pd.Timedelta(days=90))]
-                        todos_los_clientes = df_filtrado['Nombre_Completo_Cliente'].dropna().unique()
-                        clientes_recientes_unicos = clientes_recientes['Nombre_Completo_Cliente'].dropna().unique()
-                        clientes_en_riesgo = [c for c in todos_los_clientes if c and c not in clientes_recientes_unicos]
-                        datos_clave_str += f"- Clientes en Riesgo (no visitan en 90 días): {len(clientes_en_riesgo)}.\n"
-                    except Exception: pass
-                    prompt_oportunidad = f"""Eres un estratega de negocios para barberías. Analiza los datos clave y las áreas de interés. Para CADA área, proporciona: 1. **Hallazgo Principal**. 2. **Oportunidad Estratégica**. 3. **Acción Concreta**. Usa Markdown. DATOS CLAVE: {datos_clave_str} ÁREAS DE INTERÉS: {', '.join(opciones_analisis)}"""
+                        todos_los_clientes = df_filtrado['Nombre_Completo_Cliente'].nunique()
+                        clientes_recientes_unicos = clientes_recientes['Nombre_Completo_Cliente'].nunique()
+                        resumen_oportunidades += f"- Total de clientes únicos en el periodo: {todos_los_clientes}\n"
+                        resumen_oportunidades += f"- Clientes que han visitado en los últimos 90 días: {clientes_recientes_unicos}\n"
+                    
+                    prompt_oportunidad = f"""
+                    Eres un consultor de negocios para 'Kingdom Barber'.
+                    Analiza el siguiente resumen de datos y, para CADA área de interés, proporciona un análisis en Markdown con:
+                    #### Nombre del Área
+                    - **Hallazgo Clave:**
+                    - **Oportunidad de Negocio:**
+                    - **Acción Recomendada:**
+                    
+                    **Resumen de Datos:**
+                    {resumen_oportunidades}
+                    """
                     respuesta_ia = model.generate_content(prompt_oportunidad)
                     st.markdown(respuesta_ia.text)
                 except Exception as e:
                     st.error(f"No se pudo generar el análisis de oportunidades: {e}")
 
-
+# --- PESTAÑA 5: ASESOR DE ESTILO VIRTUAL ---
 with tab_asesor:
     st.header("✂️ Asesor de Estilo Virtual con IA")
-    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello y estilos que te favorezcan.")
+    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello.")
     uploaded_file = st.file_uploader("Sube una foto donde tu rostro se vea claramente", type=["jpg", "jpeg", "png"], key="style_uploader")
+    
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
         col1, col2 = st.columns([1, 2])
@@ -262,18 +321,16 @@ with tab_asesor:
                         try:
                             prompt_parts = [
                                 """
-                                Actúa como un estilista de élite y experto en visagismo masculino. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen completa.
-                                
+                                Actúa como un estilista de élite y experto en visagismo masculino. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen.
                                 **Tu Tarea (formato Markdown):**
-                                1.  **Diagnóstico del Rostro:** Primero, identifica la forma del rostro (ej. Ovalado, Cuadrado, Redondo, etc.).
-                                2.  **Recomendaciones de Cortes (Top 3):**
-                                    - **Nombre del Estilo:** (ej. Pompadour Clásico, Buzz Cut, Quiff Texturizado).
-                                    - **¿Por qué te favorece?:** Explica brevemente cómo el corte complementa la forma del rostro.
+                                1. **Diagnóstico del Rostro:** Identifica la forma del rostro (ej. Ovalado, Cuadrado).
+                                2. **Recomendaciones de Cortes (Top 3):**
+                                    - **Nombre del Estilo:**
+                                    - **¿Por qué te favorece?:**
                                     - **Nivel de Mantenimiento:** (Bajo, Medio, Alto).
-                                    - **Productos Recomendados:** Sugiere un tipo de producto ideal (ej. Cera mate, pomada base agua, spray de sal marina).
-                                    - **Inspiración Visual:** Proporciona un enlace de búsqueda de Google Images para que el cliente vea ejemplos. Usa el formato: `[Ver Ejemplos](https://www.google.com/search?q=...&tbm=isch)`
-                                
-                                Sé profesional, alentador y específico en tus recomendaciones.
+                                    - **Productos Recomendados:** (ej. Cera mate, pomada).
+                                    - **Inspiración Visual:** Proporciona un enlace de búsqueda de Google Images.
+                                Sé profesional y alentador.
                                 """,
                                 image,
                             ]
