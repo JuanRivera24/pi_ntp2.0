@@ -30,10 +30,10 @@ def run_diagnostics():
         st.success("✅ ¡ÉXITO! Conexión con la API de Google Gemini establecida.")
         with st.expander("Ver modelos encontrados"):
             st.write(models_list)
-            if 'models/gemini-pro' in models_list:
-                st.success("El modelo 'gemini-pro' fue encontrado.")
+            if 'models/gemini-2.5-flash-preview-05-20' in models_list:
+                st.success("El modelo usado en el proyecto fue encontrado (gemini-2.5-flash-preview-05-20).")
             else:
-                st.warning("ADVERTENCIA: El modelo 'gemini-pro' no aparece en la lista.")
+                st.warning("ADVERTENCIA: El modelo usado en  no aparece en la lista.")
     except Exception as e:
         st.error("❌ ERROR: No se pudo conectar con la API de Google Gemini.")
         st.error(f"Detalle: {e}")
@@ -41,29 +41,8 @@ def run_diagnostics():
 
     st.markdown("---")
 
-    # TEST 2: Carga de Archivos CSV Locales
-    st.subheader("2. Prueba de Carga de Archivos CSV")
-    try:
-        st.info("Intentando leer los archivos desde la carpeta `data/`...")
-        data_dir = os.path.join(os.path.dirname(__file__), "data")
-        df_clientes = pd.read_csv(os.path.join(data_dir, "clientes.csv"))
-        df_citas = pd.read_csv(os.path.join(data_dir, "citas.csv"))
-        df_barberos = pd.read_csv(os.path.join(data_dir, "barberos.csv"))
-        df_sedes = pd.read_csv(os.path.join(data_dir, "sedes.csv"))
-        df_servicios = pd.read_csv(os.path.join(data_dir, "servicios.csv"))
-        st.success("✅ ¡ÉXITO! Todos los archivos CSV se cargaron correctamente.")
-        st.write(f"- Clientes: **{len(df_clientes)}** | Citas: **{len(df_citas)}** | Barberos: **{len(df_barberos)}** | Sedes: **{len(df_sedes)}** | Servicios: **{len(df_servicios)}**")
-    except FileNotFoundError as e:
-        st.error(f"❌ ERROR: No se encontró el archivo: **{os.path.basename(e.filename)}**")
-        st.error("Asegúrate de que la carpeta `data` exista y contenga todos los archivos CSV.")
-    except Exception as e:
-        st.error("❌ ERROR: Ocurrió un problema al leer los archivos CSV.")
-        st.error(f"Detalle: {e}")
-
-    st.markdown("---")
-
-    # TEST 3: Conexión a tu API Local
-    st.subheader("3. Prueba de Conexión a la API Local")
+    # TEST 2: Conexión a tu API Local
+    st.subheader("2. Prueba de Conexión a la API")
     API_URL = "http://localhost:8080"
     endpoints = ["clientes", "historial/citas", "barberos", "sedes", "servicios"]
     with st.spinner("Probando conexión con los endpoints de la API..."):
@@ -74,16 +53,16 @@ def run_diagnostics():
                 response.raise_for_status()
                 st.success(f"✅ Conexión exitosa con `/{endpoint}` ({len(response.json())} registros).")
             except Exception as e:
-                st.error(f"❌ ERROR al conectar con `/{endpoint}`. Revisa que tu API (index.js) esté corriendo.")
+                st.error(f"❌ ERROR al conectar con `/{endpoint}`. Revisa que tu API (ApiApplication.java) esté corriendo.")
                 st.expander("Ver detalle del error").error(e)
                 all_successful = False
         if all_successful:
-            st.success("✅ ¡ÉXITO! Todos los endpoints de la API local respondieron correctamente.")
+            st.success("✅ ¡ÉXITO! Todos los endpoints de la API respondieron correctamente.")
 
     st.markdown("---")
 
-    # TEST 4: Prueba de Carga de Datasets Externos
-    st.subheader("4. Prueba de Carga de Datasets Externos")
+    # TEST 3: Prueba de Carga de Datasets Externos
+    st.subheader("3. Prueba de Carga de Datasets Externos")
     datasets_externos = {
         "Nacional - Establecimientos de Belleza": "https://www.datos.gov.co/api/views/e27n-di57/rows.csv?accessType=DOWNLOAD",
         "Risaralda - Estética Facial y Corporal": "https://www.datos.gov.co/api/views/92e4-cjqu/rows.csv?accessType=DOWNLOAD",
