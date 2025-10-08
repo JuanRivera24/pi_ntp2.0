@@ -1,23 +1,17 @@
 import pandas as pd
 from fpdf import FPDF, HTMLMixin
-import matplotlib.pyplot as plt
 import io
 from datetime import datetime
-import numpy as np
 from babel.dates import format_date
+import plotly.express as px  # Usamos Plotly en lugar de Matplotlib
 
 # --- Configuración de Estilo ---
 COLOR_ORO = '#D4AF37'
-COLOR_GRIS_OSCURO = '#323232'
-COLOR_GRIS_CLARO = '#F0F0F0'
 COLOR_AZUL_REPORTE = '#4682B4'
 
-# LÍNEA ELIMINADA: No forzamos una fuente que no existe en el servidor
-# plt.rcParams['font.family'] = 'Arial'
-
 class PDF(FPDF, HTMLMixin):
+    # La clase PDF (header, footer, etc.) se mantiene exactamente igual que antes.
     def header(self):
-        # ... (el resto de la clase PDF se mantiene igual) ...
         self.set_fill_color(30, 30, 30)
         self.rect(0, 0, 210, 40, 'F')
         try:
@@ -64,44 +58,36 @@ class PDF(FPDF, HTMLMixin):
         self.set_y(y)
         self.set_x(x + width)
 
-def crear_graficos(df):
+def crear_graficos_plotly(df):
     graficos = {}
     if df.empty: return graficos
-    plt.style.use('seaborn-v0_8-whitegrid')
+
+    # --- Gráfico 1: Top 5 Barberos con Plotly ---
     try:
-        top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
+        top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5).reset_index()
         if not top_barberos.empty:
-            buffer = io.BytesIO()
-            fig, ax = plt.subplots(figsize=(8, 4))
-            bars = top_barberos.sort_values().plot(kind='barh', ax=ax, color=COLOR_AZUL_REPORTE)
-            ax.set_title('Top 5 Barberos por Ingresos', fontsize=14)
-            ax.set_xlabel('Ingresos Totales ($)')
-            ax.bar_label(bars, fmt='$ {:,.0f}', padding=3)
-            ax.set_ylabel('')
-            plt.tight_layout()
-            fig.savefig(buffer, format='png', dpi=120)
-            plt.close(fig)
-            buffer.seek(0)
-            graficos['top_barberos'] = buffer
+            fig_bar = px.bar(top_barberos.sort_values(by='Precio'), 
+                             y='Nombre_Completo_Barbero', x='Precio', 
+                             title='Top 5 Barberos por Ingresos', text_auto=',.0f',
+                             orientation='h', color_discrete_sequence=[COLOR_AZUL_REPORTE])
+            fig_bar.update_layout(yaxis_title=None, xaxis_title='Ingresos Totales ($)')
+            fig_bar.update_traces(textposition='outside')
+            graficos['top_barberos'] = io.BytesIO(fig_bar.to_image(format="png", width=800, height=400, scale=2))
     except Exception as e:
-        print(f"Error generando gráfico de barberos: {e}")
+        print(f"Error generando gráfico de barberos con Plotly: {e}")
+
+    # --- Gráfico 2: Ingresos por Servicio con Plotly (Dona) ---
     try:
-        ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum()
+        ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum().reset_index()
         if not ingresos_servicio.empty:
-            buffer = io.BytesIO()
-            fig, ax = plt.subplots(figsize=(8, 5))
-            colors = plt.cm.YlOrBr(np.linspace(0.4, 0.9, len(ingresos_servicio)))
-            wedges, texts, autotexts = ax.pie(ingresos_servicio, autopct='%1.1f%%', startangle=90, colors=colors, pctdistance=0.85, wedgeprops=dict(width=0.4, edgecolor='w'))
-            plt.setp(autotexts, size=9, weight="bold", color="white")
-            ax.set_title('Distribución de Ingresos por Servicio', fontsize=14)
-            ax.legend(ingresos_servicio.index, title="Servicios", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-            plt.tight_layout()
-            fig.savefig(buffer, format='png', dpi=120)
-            plt.close(fig)
-            buffer.seek(0)
-            graficos['ingresos_servicio'] = buffer
+            fig_pie = px.pie(ingresos_servicio, names='Nombre_Servicio', values='Precio',
+                             title='Distribución de Ingresos por Servicio', hole=0.4,
+                             color_discrete_sequence=px.colors.sequential.YlOrBr)
+            fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+            graficos['ingresos_servicio'] = io.BytesIO(fig_pie.to_image(format="png", width=800, height=500, scale=2))
     except Exception as e:
-        print(f"Error generando gráfico de servicios: {e}")
+        print(f"Error generando gráfico de servicios con Plotly: {e}")
+        
     return graficos
 
 def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
@@ -131,20 +117,19 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     pdf.multi_cell(0, 5, analisis_ia_compatible)
     pdf.ln(10)
 
-    # --- INICIO DE LA CORRECCIÓN FINAL ---
-    # La sección de gráficos se RE-ACTIVA
     if not df.empty:
         pdf.section_title('Visualización de Datos')
-        graficos = crear_graficos(df.copy())
+        # Llamamos a la nueva función que usa Plotly
+        graficos = crear_graficos_plotly(df.copy())
+
         if graficos:
-            # Añadimos una comprobación extra para seguridad
             if 'top_barberos' in graficos and graficos['top_barberos']:
-                pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15)
+                pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15, type='PNG')
                 pdf.ln(5)
+            
             if 'ingresos_servicio' in graficos and graficos['ingresos_servicio']:
-                pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15)
+                pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15, type='PNG')
         else:
-            pdf.cell(0, 10, "No se pudieron generar los gráficos para la selección actual.", 0, 1)
-    # --- FIN DE LA CORRECCIÓN FINAL ---
+            pdf.cell(0, 10, "No se pudieron generar los gráficos.", 0, 1)
             
     return pdf.output(dest='S').encode('latin-1')
