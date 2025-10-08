@@ -21,7 +21,7 @@ class PDF(FPDF, HTMLMixin):
         self.set_fill_color(30, 30, 30)
         self.rect(0, 0, 210, 40, 'F')
         try:
-            self.image('assets/logo.png', x=10, y=8, w=33)
+            self.image('assets/Logo.png', x=10, y=8, w=33)
         except RuntimeError:
             self.set_xy(10, 8)
             self.set_font('Arial', 'B', 12); self.set_text_color(255, 255, 255); self.cell(33, 33, 'Logo', 0, 0, 'C')
