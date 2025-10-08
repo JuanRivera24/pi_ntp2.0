@@ -32,10 +32,18 @@ class PDF(FPDF, HTMLMixin):
         self.set_font('Arial', 'B', 22); self.set_text_color(212, 175, 55) # Color Oro
         self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
         
+        # --- INICIO DE LA CORRECCIÓN ---
         # Fecha de generación
         self.set_font('Arial', '', 10); self.set_text_color(150, 150, 150)
-        fecha_str = format_date(datetime.now(), format="'Generado el' d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", locale='es')
+        
+        # Formateamos fecha y hora por separado para más estabilidad
+        now = datetime.now()
+        fecha_formateada = format_date(now, format='d MMMM yyyy', locale='es')
+        hora_formateada = now.strftime('%H:%M:%S')
+        fecha_str = f"Generado el {fecha_formateada} a las {hora_formateada}"
+
         self.cell(0, 8, fecha_str, 0, 1, 'C')
+        # --- FIN DE LA CORRECCIÓN ---
         self.ln(15)
 
     def footer(self):
@@ -134,15 +142,11 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     pdf.kpi_box("Ingreso Promedio", f"${ingreso_promedio:,.0f}", "/ Cita", kpi_width)
     pdf.ln(28)
 
-    # --- INICIO DE LA CORRECCIÓN ---
     pdf.section_title('Análisis y Recomendaciones de IA')
-    # Codificamos el texto de la IA a 'latin-1' ignorando errores para mayor estabilidad
     analisis_ia_compatible = analisis_ia.encode('latin-1', 'ignore').decode('latin-1')
     pdf.set_font('Arial', '', 10)
-    # Usamos multi_cell, que es más robusto que write_html
     pdf.multi_cell(0, 5, analisis_ia_compatible)
     pdf.ln(10)
-    # --- FIN DE LA CORRECCIÓN ---
 
     if not df.empty:
         pdf.section_title('Visualización de Datos')
