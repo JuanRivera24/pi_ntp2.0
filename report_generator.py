@@ -75,24 +75,6 @@ def crear_graficos(df):
     plt.style.use('seaborn-v0_8-whitegrid')
 
     try:
-        top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
-        if not top_barberos.empty:
-            buffer = io.BytesIO()
-            fig, ax = plt.subplots(figsize=(8, 4))
-            bars = top_barberos.sort_values().plot(kind='barh', ax=ax, color=COLOR_AZUL_REPORTE)
-            ax.set_title('Top 5 Barberos por Ingresos', fontsize=14)
-            ax.set_xlabel('Ingresos Totales ($)')
-            ax.bar_label(bars, fmt='$ {:,.0f}', padding=3)
-            ax.set_ylabel('')
-            plt.tight_layout()
-            fig.savefig(buffer, format='png', dpi=120)
-            plt.close(fig)
-            buffer.seek(0)
-            graficos['top_barberos'] = buffer
-    except Exception as e:
-        print(f"Error generando gráfico de barberos: {e}")
-
-    try:
         ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum()
         if not ingresos_servicio.empty:
             buffer = io.BytesIO()
