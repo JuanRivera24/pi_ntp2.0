@@ -12,12 +12,11 @@ COLOR_GRIS_OSCURO = '#323232'
 COLOR_GRIS_CLARO = '#F0F0F0'
 COLOR_AZUL_REPORTE = '#4682B4'
 
-# LÍNEA ELIMINADA: No forzamos una fuente que no existe en el servidor
+# No forzamos una fuente que no existe en el servidor
 # plt.rcParams['font.family'] = 'Arial'
 
 class PDF(FPDF, HTMLMixin):
     def header(self):
-        # Banner oscuro superior
         self.set_fill_color(30, 30, 30)
         self.rect(0, 0, 210, 40, 'F')
         try:
@@ -26,19 +25,15 @@ class PDF(FPDF, HTMLMixin):
             self.set_xy(10, 8)
             self.set_font('Arial', 'B', 12); self.set_text_color(255, 255, 255); self.cell(33, 33, 'Logo', 0, 0, 'C')
 
-        # Título del Reporte
         self.set_y(15)
-        self.set_font('Arial', 'B', 22); self.set_text_color(212, 175, 55) # Color Oro
+        self.set_font('Arial', 'B', 22); self.set_text_color(212, 175, 55)
         self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
         
-        # Fecha de generación
         self.set_font('Arial', '', 10); self.set_text_color(150, 150, 150)
-        
         now = datetime.now()
         fecha_formateada = format_date(now, format='d MMMM yyyy', locale='es')
         hora_formateada = now.strftime('%H:%M:%S')
         fecha_str = f"Generado el {fecha_formateada} a las {hora_formateada}"
-
         self.cell(0, 8, fecha_str, 0, 1, 'C')
         self.ln(15)
 
@@ -52,7 +47,7 @@ class PDF(FPDF, HTMLMixin):
         self.set_font('Arial', 'B', 14)
         self.set_text_color(40, 40, 40)
         self.cell(0, 6, title, 0, 1, 'L')
-        self.set_draw_color(212, 175, 55) # Color Oro
+        self.set_draw_color(212, 175, 55)
         self.line(self.get_x(), self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(8)
 
@@ -69,21 +64,34 @@ class PDF(FPDF, HTMLMixin):
         self.set_x(x + width)
 
 def crear_graficos(df):
+    # Esta función se seguirá ejecutando, pero su resultado no se usará en el PDF por ahora.
     graficos = {}
     if df.empty: return graficos
-
     plt.style.use('seaborn-v0_8-whitegrid')
-
+    try:
+        top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
+        if not top_barberos.empty:
+            buffer = io.BytesIO()
+            fig, ax = plt.subplots(figsize=(8, 4))
+            bars = top_barberos.sort_values().plot(kind='barh', ax=ax, color=COLOR_AZUL_REPORTE)
+            ax.set_title('Top 5 Barberos por Ingresos', fontsize=14)
+            ax.set_xlabel('Ingresos Totales ($)')
+            ax.bar_label(bars, fmt='$ {:,.0f}', padding=3)
+            ax.set_ylabel('')
+            plt.tight_layout()
+            fig.savefig(buffer, format='png', dpi=120)
+            plt.close(fig)
+            buffer.seek(0)
+            graficos['top_barberos'] = buffer
+    except Exception as e:
+        print(f"Error generando gráfico de barberos: {e}")
     try:
         ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum()
         if not ingresos_servicio.empty:
             buffer = io.BytesIO()
             fig, ax = plt.subplots(figsize=(8, 5))
             colors = plt.cm.YlOrBr(np.linspace(0.4, 0.9, len(ingresos_servicio)))
-            wedges, texts, autotexts = ax.pie(
-                ingresos_servicio, autopct='%1.1f%%', startangle=90, colors=colors,
-                pctdistance=0.85, wedgeprops=dict(width=0.4, edgecolor='w')
-            )
+            wedges, texts, autotexts = ax.pie(ingresos_servicio, autopct='%1.1f%%', startangle=90, colors=colors, pctdistance=0.85, wedgeprops=dict(width=0.4, edgecolor='w'))
             plt.setp(autotexts, size=9, weight="bold", color="white")
             ax.set_title('Distribución de Ingresos por Servicio', fontsize=14)
             ax.legend(ingresos_servicio.index, title="Servicios", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
@@ -94,7 +102,6 @@ def crear_graficos(df):
             graficos['ingresos_servicio'] = buffer
     except Exception as e:
         print(f"Error generando gráfico de servicios: {e}")
-        
     return graficos
 
 def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
@@ -123,19 +130,5 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     pdf.set_font('Arial', '', 10)
     pdf.multi_cell(0, 5, analisis_ia_compatible)
     pdf.ln(10)
-
-    if not df.empty:
-        pdf.section_title('Visualización de Datos')
-        graficos = crear_graficos(df.copy())
-
-        if graficos:
-            if 'top_barberos' in graficos:
-                pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15)
-                pdf.ln(5)
-            
-            if 'ingresos_servicio' in graficos:
-                pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15)
-        else:
-            pdf.cell(0, 10, "No se generaron gráficos para la selección actual.", 0, 1)
             
     return bytes(pdf.output())
