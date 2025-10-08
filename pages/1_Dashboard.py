@@ -5,13 +5,11 @@ import data_manager as dm
 import locale
 
 # --- 1. CONFIGURACIÓN INICIAL ---
+# Intenta configurar el idioma a español. Si falla, solo muestra una advertencia y continúa.
 try:
     locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 except locale.Error:
-    try:
-        locale.setlocale(locale.LC_TIME, 'Spanish')
-    except locale.Error:
-        st.warning("No se pudo establecer el local a español.")
+    st.warning("No se pudo establecer la configuración regional a español. Las fechas podrían aparecer en inglés.")
 
 st.set_page_config(page_title="Dashboard | Kingdom Barber", page_icon="📊", layout="wide")
 st.markdown("<h1 style='text-align: center; color: #D4AF37;'>📊 Dashboard General</h1>", unsafe_allow_html=True)
