@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import io
 from datetime import datetime
 import numpy as np
-from babel.dates import format_date # 1. IMPORTAMOS BABEL
+from babel.dates import format_date  # 1. IMPORTAMOS BABEL
 
 # --- Configuración de Estilo ---
 COLOR_ORO = '#D4AF37'
@@ -24,18 +24,29 @@ class PDF(FPDF, HTMLMixin):
             self.image('assets/Logo.png', x=10, y=8, w=33)
         except RuntimeError:
             self.set_xy(10, 8)
-            self.set_font('Arial', 'B', 12); self.set_text_color(255, 255, 255); self.cell(33, 33, 'Logo', 0, 0, 'C')
+            self.set_font('Arial', 'B', 12)
+            self.set_text_color(255, 255, 255)
+            self.cell(33, 33, 'Logo', 0, 0, 'C')
 
         # Título del Reporte
         self.set_y(15)
-        self.set_font('Arial', 'B', 22); self.set_text_color(212, 175, 55) # Color Oro
+        self.set_font('Arial', 'B', 22)
+        self.set_text_color(212, 175, 55)  # Color Oro
         self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
         
         # Fecha de generación
-        self.set_font('Arial', '', 10); self.set_text_color(150, 150, 150)
-        
-        # --- 2. REEMPLAZAMOS LOCALE POR BABEL ---
-        fecha_str = format_date(datetime.now(), format="'Generado el' d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", locale='es')
+        self.set_font('Arial', '', 10)
+        self.set_text_color(150, 150, 150)
+
+        # --- 2. REEMPLAZAMOS LOCALE POR BABEL CON FALLBACK ---
+        try:
+            fecha_str = format_date(datetime.now(), 
+                                    format="'Generado el' d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", 
+                                    locale='es')
+        except:
+            fecha_str = format_date(datetime.now(), 
+                                    format="'Generated on' MMMM d, yyyy 'at' HH:mm:ss", 
+                                    locale='en')
         
         self.cell(0, 8, fecha_str, 0, 1, 'C')
         self.ln(15)
@@ -50,17 +61,21 @@ class PDF(FPDF, HTMLMixin):
         self.set_font('Arial', 'B', 14)
         self.set_text_color(40, 40, 40)
         self.cell(0, 6, title, 0, 1, 'L')
-        self.set_draw_color(212, 175, 55) # Color Oro
+        self.set_draw_color(212, 175, 55)  # Color Oro
         self.line(self.get_x(), self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(8)
 
     def kpi_box(self, title, value, unit, width):
-        self.set_font('Arial', '', 11); self.set_text_color(100, 100, 100)
-        self.set_fill_color(245, 245, 245); self.set_draw_color(220, 220, 220)
-        x = self.get_x(); y = self.get_y()
+        self.set_font('Arial', '', 11)
+        self.set_text_color(100, 100, 100)
+        self.set_fill_color(245, 245, 245)
+        self.set_draw_color(220, 220, 220)
+        x = self.get_x()
+        y = self.get_y()
         self.rect(x, y, width, 22, 'DF')
         self.cell(width, 10, title, 0, 1, 'C')
-        self.set_font('Arial', 'B', 16); self.set_text_color(50, 50, 50)
+        self.set_font('Arial', 'B', 16)
+        self.set_text_color(50, 50, 50)
         self.set_xy(x, y + 10)
         self.cell(width, 10, f'{value}{unit}', 0, 1, 'C')
         self.set_y(y)
@@ -68,7 +83,8 @@ class PDF(FPDF, HTMLMixin):
 
 def crear_graficos(df):
     graficos = {}
-    if df.empty: return graficos
+    if df.empty: 
+        return graficos
 
     plt.style.use('seaborn-v0_8-whitegrid')
 
@@ -119,7 +135,8 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     pdf = PDF()
     pdf.add_page()
     
-    pdf.set_font('Arial', 'B', 11); pdf.set_text_color(80, 80, 80)
+    pdf.set_font('Arial', 'B', 11)
+    pdf.set_text_color(80, 80, 80)
     pdf.cell(0, 8, f"Filtros Aplicados - Sede: {contexto_reporte.get('sede', 'N/A')}", 0, 1)
     pdf.set_font('Arial', '', 10)
     pdf.cell(0, 6, f"Periodo Analizado: {contexto_reporte.get('rango_fechas', 'N/A')}", 0, 1)
@@ -131,8 +148,10 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     ingreso_promedio = df['Precio'].mean() if total_citas > 0 else 0
     
     kpi_width = (pdf.w - pdf.l_margin - pdf.r_margin - 10) / 3
-    pdf.kpi_box("Citas Totales", f"{total_citas}", "", kpi_width); pdf.set_x(pdf.get_x() + 5)
-    pdf.kpi_box("Ingresos Totales", f"${total_ingresos:,.0f}", "", kpi_width); pdf.set_x(pdf.get_x() + 5)
+    pdf.kpi_box("Citas Totales", f"{total_citas}", "", kpi_width)
+    pdf.set_x(pdf.get_x() + 5)
+    pdf.kpi_box("Ingresos Totales", f"${total_ingresos:,.0f}", "", kpi_width)
+    pdf.set_x(pdf.get_x() + 5)
     pdf.kpi_box("Ingreso Promedio", f"${ingreso_promedio:,.0f}", "/ Cita", kpi_width)
     pdf.ln(28)
 
