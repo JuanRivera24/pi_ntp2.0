@@ -20,7 +20,7 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     # Se mantiene tu modelo de IA especificado
-    model = genai.GenerativeModel('gemini-1.5-flash') # Modelo actualizado a uno estándar
+    model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20') # Modelo actualizado a uno estándar
 except Exception as e:
     st.error(f"No se pudo configurar la conexión con Google Gemini. Verifica tu API Key. Error: {e}")
 
