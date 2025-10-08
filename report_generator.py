@@ -12,8 +12,8 @@ COLOR_GRIS_OSCURO = '#323232'
 COLOR_GRIS_CLARO = '#F0F0F0'
 COLOR_AZUL_REPORTE = '#4682B4'
 
-# Configurar Matplotlib para usar una fuente compatible con FPDF
-plt.rcParams['font.family'] = 'Arial'
+# LÍNEA ELIMINADA: No forzamos una fuente que no existe en el servidor
+# plt.rcParams['font.family'] = 'Arial'
 
 class PDF(FPDF, HTMLMixin):
     def header(self):
@@ -21,7 +21,6 @@ class PDF(FPDF, HTMLMixin):
         self.set_fill_color(30, 30, 30)
         self.rect(0, 0, 210, 40, 'F')
         try:
-            # Asumiendo que tienes una carpeta 'assets' en la raíz de tu proyecto Streamlit
             self.image('assets/Logo.png', x=10, y=8, w=33)
         except RuntimeError:
             self.set_xy(10, 8)
@@ -32,18 +31,15 @@ class PDF(FPDF, HTMLMixin):
         self.set_font('Arial', 'B', 22); self.set_text_color(212, 175, 55) # Color Oro
         self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
         
-        # --- INICIO DE LA CORRECCIÓN ---
         # Fecha de generación
         self.set_font('Arial', '', 10); self.set_text_color(150, 150, 150)
         
-        # Formateamos fecha y hora por separado para más estabilidad
         now = datetime.now()
         fecha_formateada = format_date(now, format='d MMMM yyyy', locale='es')
         hora_formateada = now.strftime('%H:%M:%S')
         fecha_str = f"Generado el {fecha_formateada} a las {hora_formateada}"
 
         self.cell(0, 8, fecha_str, 0, 1, 'C')
-        # --- FIN DE LA CORRECCIÓN ---
         self.ln(15)
 
     def footer(self):
@@ -78,7 +74,6 @@ def crear_graficos(df):
 
     plt.style.use('seaborn-v0_8-whitegrid')
 
-    # --- Gráfico 1: Top 5 Barberos por Ingresos ---
     try:
         top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
         if not top_barberos.empty:
@@ -97,7 +92,6 @@ def crear_graficos(df):
     except Exception as e:
         print(f"Error generando gráfico de barberos: {e}")
 
-    # --- Gráfico 2: Distribución de Ingresos por Servicio (Dona) ---
     try:
         ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum()
         if not ingresos_servicio.empty:
