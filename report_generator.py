@@ -64,7 +64,6 @@ class PDF(FPDF, HTMLMixin):
         self.set_x(x + width)
 
 def crear_graficos(df):
-    # Esta función se seguirá ejecutando, pero su resultado no se usará en el PDF por ahora.
     graficos = {}
     if df.empty: return graficos
     plt.style.use('seaborn-v0_8-whitegrid')
@@ -130,5 +129,14 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     pdf.set_font('Arial', '', 10)
     pdf.multi_cell(0, 5, analisis_ia_compatible)
     pdf.ln(10)
+    
+    # La sección de gráficos sigue deshabilitada para asegurar que el PDF se genere
+    # if not df.empty:
+    #     pdf.section_title('Visualización de Datos')
+    #     graficos = crear_graficos(df.copy())
+    #     # ... etc
             
-    return bytes(pdf.output())
+    # --- INICIO DE LA CORRECCIÓN ---
+    # Esta es la forma recomendada y más estable de generar la salida en bytes
+    return pdf.output(dest='S').encode('latin-1')
+    # --- FIN DE LA CORRECCIÓN ---
