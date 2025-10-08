@@ -2,14 +2,10 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import data_manager as dm
-import locale
+# import locale  <-- LÍNEA ELIMINADA
 
 # --- 1. CONFIGURACIÓN INICIAL ---
-# Intenta configurar el idioma a español. Si falla, solo muestra una advertencia y continúa.
-try:
-    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-except locale.Error:
-    st.warning("No se pudo establecer la configuración regional a español. Las fechas podrían aparecer en inglés.")
+# Bloque try-except de locale ELIMINADO
 
 st.set_page_config(page_title="Dashboard | Kingdom Barber", page_icon="📊", layout="wide")
 st.markdown("<h1 style='text-align: center; color: #D4AF37;'>📊 Dashboard General</h1>", unsafe_allow_html=True)
@@ -144,8 +140,8 @@ with col_graf4:
         if not df_agrupado.empty:
             promedio_citas = df_agrupado['Numero de Citas'].mean()
             fig_linea_tiempo.add_hline(y=promedio_citas, line_dash="dot",
-                                       annotation_text=f"Promedio: {promedio_citas:.1f}",
-                                       annotation_position="bottom right")
+                                     annotation_text=f"Promedio: {promedio_citas:.1f}",
+                                     annotation_position="bottom right")
         
         st.plotly_chart(fig_linea_tiempo, use_container_width=True)
     else:

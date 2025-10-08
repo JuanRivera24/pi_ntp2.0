@@ -8,7 +8,7 @@ from io import StringIO
 import sys
 from PIL import Image
 from datetime import datetime
-import locale
+from babel.dates import format_date # 1. IMPORTAMOS BABEL
 
 # --- 1. CONFIGURACIÓN DE PÁGINA Y CONEXIÓN A LA IA ---
 st.set_page_config(page_title="Asistente IA", page_icon="🤖", layout="wide")
@@ -20,7 +20,7 @@ try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
     # Se mantiene tu modelo de IA especificado
-    model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
+    model = genai.GenerativeModel('gemini-1.5-flash') # Modelo actualizado a uno estándar
 except Exception as e:
     st.error(f"No se pudo configurar la conexión con Google Gemini. Verifica tu API Key. Error: {e}")
 
@@ -85,12 +85,8 @@ with tab_reportes:
     def generar_analisis_reporte(resumen_str):
         if not model: return "El modelo de IA no está disponible."
         
-        # Corrección 1: Se obtiene la fecha actual para el prompt
-        try:
-            locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-        except locale.Error:
-            locale.setlocale(locale.LC_TIME, 'Spanish')
-        fecha_actual = datetime.now().strftime("%d de %B de %Y")
+        # 2. SE REEMPLAZA LOCALE POR BABEL
+        fecha_actual = format_date(datetime.now(), format="d 'de' MMMM 'de' yyyy", locale='es')
 
         prompt = f"""
         Actúa como un analista de negocios para Kingdom Barber.
@@ -162,7 +158,6 @@ with tab_analista:
                 columnas = df_filtrado.columns.tolist()
                 tipos_de_datos = df_filtrado.dtypes.to_string()
                 
-                # --- PROMPT MEJORADO CON NUEVA REGLA DE CONTEXTO ---
                 prompt_agente = f"""
                 Actúa como 'Alex', un Agente de IA experto en análisis de datos con Pandas.
                 Tu objetivo es generar un script de Python para responder la pregunta del usuario analizando un DataFrame llamado `df`.
@@ -192,7 +187,7 @@ with tab_analista:
                         st.code(codigo_generado, language='python')
                     
                     with st.spinner("Ejecutando el análisis... ⚙️"):
-                        df = df_filtrado.copy() # Usamos una copia para seguridad
+                        df = df_filtrado.copy()
                         old_stdout, sys.stdout = sys.stdout, StringIO()
                         exec(codigo_generado, {'pd': pd, 'df': df})
                         resultado_analisis = sys.stdout.getvalue()
@@ -235,8 +230,10 @@ with tab_marketing:
         else:
             with st.spinner("Creando una campaña brillante... ✨"):
                 try:
+                    # 3. SE USA BABEL PARA OBTENER EL NOMBRE DEL DÍA EN ESPAÑOL
+                    df_filtrado['Dia_Semana'] = pd.to_datetime(df_filtrado['Fecha']).dt.day_name(locale='es_ES.UTF-8')
                     servicio_menos_popular = df_filtrado['Nombre_Servicio'].value_counts().idxmin()
-                    dia_mas_flojo = df_filtrado['Fecha'].dt.day_name().value_counts().idxmin()
+                    dia_mas_flojo = df_filtrado['Dia_Semana'].value_counts().idxmin()
                 except Exception:
                     servicio_menos_popular, dia_mas_flojo = "N/A", "N/A"
                 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import io
 from datetime import datetime
 import numpy as np
-import locale
+from babel.dates import format_date # 1. IMPORTAMOS BABEL
 
 # --- Configuración de Estilo ---
 COLOR_ORO = '#D4AF37'
@@ -33,10 +33,10 @@ class PDF(FPDF, HTMLMixin):
         
         # Fecha de generación
         self.set_font('Arial', '', 10); self.set_text_color(150, 150, 150)
-        # Configurar locale para fecha en español
-        try: locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
-        except locale.Error: locale.setlocale(locale.LC_TIME, 'Spanish')
-        fecha_str = datetime.now().strftime("Generado el %d de %B de %Y a las %H:%M:%S")
+        
+        # --- 2. REEMPLAZAMOS LOCALE POR BABEL ---
+        fecha_str = format_date(datetime.now(), format="'Generado el' d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", locale='es')
+        
         self.cell(0, 8, fecha_str, 0, 1, 'C')
         self.ln(15)
 
@@ -70,7 +70,6 @@ def crear_graficos(df):
     graficos = {}
     if df.empty: return graficos
 
-    # Usamos un estilo claro y limpio
     plt.style.use('seaborn-v0_8-whitegrid')
 
     # --- Gráfico 1: Top 5 Barberos por Ingresos ---
