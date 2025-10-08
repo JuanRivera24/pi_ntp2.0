@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import io
 from datetime import datetime
 import numpy as np
-from babel.dates import format_date  # 1. IMPORTAMOS BABEL
+from babel.dates import format_date
 
 # --- Configuración de Estilo ---
 COLOR_ORO = '#D4AF37'
@@ -12,56 +12,56 @@ COLOR_GRIS_OSCURO = '#323232'
 COLOR_GRIS_CLARO = '#F0F0F0'
 COLOR_AZUL_REPORTE = '#4682B4'
 
-# Configurar Matplotlib para usar una fuente compatible con FPDF
 plt.rcParams['font.family'] = 'Arial'
 
 class PDF(FPDF, HTMLMixin):
     def header(self):
-        # Banner oscuro superior
-        self.set_fill_color(30, 30, 30)
-        self.rect(0, 0, 210, 40, 'F')
         try:
-            self.image('assets/Logo.png', x=10, y=8, w=33)
-        except RuntimeError:
-            self.set_xy(10, 8)
-            self.set_font('Arial', 'B', 12)
-            self.set_text_color(255, 255, 255)
-            self.cell(33, 33, 'Logo', 0, 0, 'C')
+            # Banner oscuro superior
+            self.set_fill_color(30, 30, 30)
+            self.rect(0, 0, 210, 40, 'F')
 
-        # Título del Reporte
-        self.set_y(15)
-        self.set_font('Arial', 'B', 22)
-        self.set_text_color(212, 175, 55)  # Color Oro
-        self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
-        
-        # Fecha de generación
-        self.set_font('Arial', '', 10)
-        self.set_text_color(150, 150, 150)
+            # Logo
+            try:
+                self.image('assets/Logo.png', x=10, y=8, w=33)
+            except RuntimeError:
+                self.set_xy(10, 8)
+                self.set_font('Arial', 'B', 12)
+                self.set_text_color(255, 255, 255)
+                self.cell(33, 33, 'Logo', 0, 0, 'C')
 
-        # --- 2. REEMPLAZAMOS LOCALE POR BABEL CON FALLBACK ---
-        try:
-            fecha_str = format_date(datetime.now(), 
-                                    format="'Generado el' d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", 
-                                    locale='es')
-        except:
-            fecha_str = format_date(datetime.now(), 
-                                    format="'Generated on' MMMM d, yyyy 'at' HH:mm:ss", 
-                                    locale='en')
-        
-        self.cell(0, 8, fecha_str, 0, 1, 'C')
-        self.ln(15)
+            # Título
+            self.set_y(15)
+            self.set_font('Arial', 'B', 22)
+            self.set_text_color(212, 175, 55)
+            self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
+
+            # Fecha segura (sin locales)
+            self.set_font('Arial', '', 10)
+            self.set_text_color(150, 150, 150)
+            try:
+                fecha_str = format_date(datetime.now(), "d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", locale='es')
+            except Exception:
+                fecha_str = datetime.now().strftime("Generado el %d/%m/%Y a las %H:%M:%S")
+            self.cell(0, 8, fecha_str, 0, 1, 'C')
+            self.ln(15)
+        except Exception as e:
+            print(f"[ERROR HEADER PDF] {e}")
 
     def footer(self):
-        self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
-        self.set_text_color(128, 128, 128)
-        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+        try:
+            self.set_y(-15)
+            self.set_font('Arial', 'I', 8)
+            self.set_text_color(128, 128, 128)
+            self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+        except Exception as e:
+            print(f"[ERROR FOOTER PDF] {e}")
 
     def section_title(self, title):
         self.set_font('Arial', 'B', 14)
         self.set_text_color(40, 40, 40)
         self.cell(0, 6, title, 0, 1, 'L')
-        self.set_draw_color(212, 175, 55)  # Color Oro
+        self.set_draw_color(212, 175, 55)
         self.line(self.get_x(), self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(8)
 
@@ -83,12 +83,12 @@ class PDF(FPDF, HTMLMixin):
 
 def crear_graficos(df):
     graficos = {}
-    if df.empty: 
+    if df.empty:
         return graficos
 
     plt.style.use('seaborn-v0_8-whitegrid')
 
-    # --- Gráfico 1: Top 5 Barberos por Ingresos ---
+    # Gráfico 1: Top 5 Barberos
     try:
         top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
         if not top_barberos.empty:
@@ -107,7 +107,7 @@ def crear_graficos(df):
     except Exception as e:
         print(f"Error generando gráfico de barberos: {e}")
 
-    # --- Gráfico 2: Distribución de Ingresos por Servicio (Dona) ---
+    # Gráfico 2: Ingresos por Servicio
     try:
         ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum()
         if not ingresos_servicio.empty:
@@ -128,13 +128,14 @@ def crear_graficos(df):
             graficos['ingresos_servicio'] = buffer
     except Exception as e:
         print(f"Error generando gráfico de servicios: {e}")
-        
+
     return graficos
 
 def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
+    print("[PDF] Generando reporte...")
     pdf = PDF()
     pdf.add_page()
-    
+
     pdf.set_font('Arial', 'B', 11)
     pdf.set_text_color(80, 80, 80)
     pdf.cell(0, 8, f"Filtros Aplicados - Sede: {contexto_reporte.get('sede', 'N/A')}", 0, 1)
@@ -146,7 +147,7 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     total_citas = len(df.dropna(subset=['ID_Cita']))
     total_ingresos = df['Precio'].sum()
     ingreso_promedio = df['Precio'].mean() if total_citas > 0 else 0
-    
+
     kpi_width = (pdf.w - pdf.l_margin - pdf.r_margin - 10) / 3
     pdf.kpi_box("Citas Totales", f"{total_citas}", "", kpi_width)
     pdf.set_x(pdf.get_x() + 5)
@@ -169,10 +170,12 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
             if 'top_barberos' in graficos:
                 pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15)
                 pdf.ln(5)
-            
             if 'ingresos_servicio' in graficos:
                 pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15)
         else:
             pdf.cell(0, 10, "No se generaron gráficos para la selección actual.", 0, 1)
-            
-    return bytes(pdf.output())
+
+    print("[PDF] Renderizando salida final...")
+    pdf_bytes = bytes(pdf.output(dest='S').encode('latin1'))
+    print("[PDF] Generación completada ✅")
+    return pdf_bytes
