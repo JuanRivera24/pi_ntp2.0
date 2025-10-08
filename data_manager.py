@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 
-API_URL = "http://localhost:8080"
+API_URL = st.secrets["API_URL"]
 
 @st.cache_data
 def obtener_datos_api(endpoint):
