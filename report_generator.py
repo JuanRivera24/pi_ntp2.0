@@ -1,16 +1,15 @@
 import pandas as pd
 from fpdf import FPDF, HTMLMixin
-import io
 from datetime import datetime
 from babel.dates import format_date
-import plotly.express as px  # Usamos Plotly en lugar de Matplotlib
+import plotly.express as px
 
 # --- Configuración de Estilo ---
 COLOR_ORO = '#D4AF37'
 COLOR_AZUL_REPORTE = '#4682B4'
 
 class PDF(FPDF, HTMLMixin):
-    # La clase PDF (header, footer, etc.) se mantiene exactamente igual que antes.
+    # La clase PDF (header, footer, etc.) se mantiene exactamente igual.
     def header(self):
         self.set_fill_color(30, 30, 30)
         self.rect(0, 0, 210, 40, 'F')
@@ -72,7 +71,8 @@ def crear_graficos_plotly(df):
                              orientation='h', color_discrete_sequence=[COLOR_AZUL_REPORTE])
             fig_bar.update_layout(yaxis_title=None, xaxis_title='Ingresos Totales ($)')
             fig_bar.update_traces(textposition='outside')
-            graficos['top_barberos'] = io.BytesIO(fig_bar.to_image(format="png", width=800, height=400, scale=2))
+            # CORRECCIÓN: Se pasan los bytes directamente
+            graficos['top_barberos'] = fig_bar.to_image(format="png", width=800, height=400, scale=2)
     except Exception as e:
         print(f"Error generando gráfico de barberos con Plotly: {e}")
 
@@ -84,7 +84,8 @@ def crear_graficos_plotly(df):
                              title='Distribución de Ingresos por Servicio', hole=0.4,
                              color_discrete_sequence=px.colors.sequential.YlOrBr)
             fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-            graficos['ingresos_servicio'] = io.BytesIO(fig_pie.to_image(format="png", width=800, height=500, scale=2))
+            # CORRECCIÓN: Se pasan los bytes directamente
+            graficos['ingresos_servicio'] = fig_pie.to_image(format="png", width=800, height=500, scale=2)
     except Exception as e:
         print(f"Error generando gráfico de servicios con Plotly: {e}")
         
@@ -119,14 +120,11 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
 
     if not df.empty:
         pdf.section_title('Visualización de Datos')
-        # Llamamos a la nueva función que usa Plotly
         graficos = crear_graficos_plotly(df.copy())
-
         if graficos:
             if 'top_barberos' in graficos and graficos['top_barberos']:
                 pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15, type='PNG')
                 pdf.ln(5)
-            
             if 'ingresos_servicio' in graficos and graficos['ingresos_servicio']:
                 pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15, type='PNG')
         else:
