@@ -12,11 +12,12 @@ COLOR_GRIS_OSCURO = '#323232'
 COLOR_GRIS_CLARO = '#F0F0F0'
 COLOR_AZUL_REPORTE = '#4682B4'
 
-# No forzamos una fuente que no existe en el servidor
+# LÍNEA ELIMINADA: No forzamos una fuente que no existe en el servidor
 # plt.rcParams['font.family'] = 'Arial'
 
 class PDF(FPDF, HTMLMixin):
     def header(self):
+        # ... (el resto de la clase PDF se mantiene igual) ...
         self.set_fill_color(30, 30, 30)
         self.rect(0, 0, 210, 40, 'F')
         try:
@@ -129,14 +130,21 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     pdf.set_font('Arial', '', 10)
     pdf.multi_cell(0, 5, analisis_ia_compatible)
     pdf.ln(10)
-    
-    # La sección de gráficos sigue deshabilitada para asegurar que el PDF se genere
-    # if not df.empty:
-    #     pdf.section_title('Visualización de Datos')
-    #     graficos = crear_graficos(df.copy())
-    #     # ... etc
+
+    # --- INICIO DE LA CORRECCIÓN FINAL ---
+    # La sección de gráficos se RE-ACTIVA
+    if not df.empty:
+        pdf.section_title('Visualización de Datos')
+        graficos = crear_graficos(df.copy())
+        if graficos:
+            # Añadimos una comprobación extra para seguridad
+            if 'top_barberos' in graficos and graficos['top_barberos']:
+                pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15)
+                pdf.ln(5)
+            if 'ingresos_servicio' in graficos and graficos['ingresos_servicio']:
+                pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15)
+        else:
+            pdf.cell(0, 10, "No se pudieron generar los gráficos para la selección actual.", 0, 1)
+    # --- FIN DE LA CORRECCIÓN FINAL ---
             
-    # --- INICIO DE LA CORRECCIÓN ---
-    # Esta es la forma recomendada y más estable de generar la salida en bytes
     return pdf.output(dest='S').encode('latin-1')
-    # --- FIN DE LA CORRECCIÓN ---
