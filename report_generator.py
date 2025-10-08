@@ -12,70 +12,53 @@ COLOR_GRIS_OSCURO = '#323232'
 COLOR_GRIS_CLARO = '#F0F0F0'
 COLOR_AZUL_REPORTE = '#4682B4'
 
+# Configurar Matplotlib para usar una fuente compatible con FPDF
 plt.rcParams['font.family'] = 'Arial'
 
 class PDF(FPDF, HTMLMixin):
     def header(self):
+        # Banner oscuro superior
+        self.set_fill_color(30, 30, 30)
+        self.rect(0, 0, 210, 40, 'F')
         try:
-            # Banner oscuro superior
-            self.set_fill_color(30, 30, 30)
-            self.rect(0, 0, 210, 40, 'F')
+            # Asumiendo que tienes una carpeta 'assets' en la raíz de tu proyecto Streamlit
+            self.image('assets/Logo.png', x=10, y=8, w=33)
+        except RuntimeError:
+            self.set_xy(10, 8)
+            self.set_font('Arial', 'B', 12); self.set_text_color(255, 255, 255); self.cell(33, 33, 'Logo', 0, 0, 'C')
 
-            # Logo
-            try:
-                self.image('assets/Logo.png', x=10, y=8, w=33)
-            except RuntimeError:
-                self.set_xy(10, 8)
-                self.set_font('Arial', 'B', 12)
-                self.set_text_color(255, 255, 255)
-                self.cell(33, 33, 'Logo', 0, 0, 'C')
-
-            # Título
-            self.set_y(15)
-            self.set_font('Arial', 'B', 22)
-            self.set_text_color(212, 175, 55)
-            self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
-
-            # Fecha segura (sin locales)
-            self.set_font('Arial', '', 10)
-            self.set_text_color(150, 150, 150)
-            try:
-                fecha_str = format_date(datetime.now(), "d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", locale='es')
-            except Exception:
-                fecha_str = datetime.now().strftime("Generado el %d/%m/%Y a las %H:%M:%S")
-            self.cell(0, 8, fecha_str, 0, 1, 'C')
-            self.ln(15)
-        except Exception as e:
-            print(f"[ERROR HEADER PDF] {e}")
+        # Título del Reporte
+        self.set_y(15)
+        self.set_font('Arial', 'B', 22); self.set_text_color(212, 175, 55) # Color Oro
+        self.cell(0, 10, 'Reporte de Desempeño', 0, 1, 'C')
+        
+        # Fecha de generación
+        self.set_font('Arial', '', 10); self.set_text_color(150, 150, 150)
+        fecha_str = format_date(datetime.now(), format="'Generado el' d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", locale='es')
+        self.cell(0, 8, fecha_str, 0, 1, 'C')
+        self.ln(15)
 
     def footer(self):
-        try:
-            self.set_y(-15)
-            self.set_font('Arial', 'I', 8)
-            self.set_text_color(128, 128, 128)
-            self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
-        except Exception as e:
-            print(f"[ERROR FOOTER PDF] {e}")
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(128, 128, 128)
+        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
 
     def section_title(self, title):
         self.set_font('Arial', 'B', 14)
         self.set_text_color(40, 40, 40)
         self.cell(0, 6, title, 0, 1, 'L')
-        self.set_draw_color(212, 175, 55)
+        self.set_draw_color(212, 175, 55) # Color Oro
         self.line(self.get_x(), self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(8)
 
     def kpi_box(self, title, value, unit, width):
-        self.set_font('Arial', '', 11)
-        self.set_text_color(100, 100, 100)
-        self.set_fill_color(245, 245, 245)
-        self.set_draw_color(220, 220, 220)
-        x = self.get_x()
-        y = self.get_y()
+        self.set_font('Arial', '', 11); self.set_text_color(100, 100, 100)
+        self.set_fill_color(245, 245, 245); self.set_draw_color(220, 220, 220)
+        x = self.get_x(); y = self.get_y()
         self.rect(x, y, width, 22, 'DF')
         self.cell(width, 10, title, 0, 1, 'C')
-        self.set_font('Arial', 'B', 16)
-        self.set_text_color(50, 50, 50)
+        self.set_font('Arial', 'B', 16); self.set_text_color(50, 50, 50)
         self.set_xy(x, y + 10)
         self.cell(width, 10, f'{value}{unit}', 0, 1, 'C')
         self.set_y(y)
@@ -83,12 +66,11 @@ class PDF(FPDF, HTMLMixin):
 
 def crear_graficos(df):
     graficos = {}
-    if df.empty:
-        return graficos
+    if df.empty: return graficos
 
     plt.style.use('seaborn-v0_8-whitegrid')
 
-    # Gráfico 1: Top 5 Barberos
+    # --- Gráfico 1: Top 5 Barberos por Ingresos ---
     try:
         top_barberos = df.groupby('Nombre_Completo_Barbero')['Precio'].sum().nlargest(5)
         if not top_barberos.empty:
@@ -107,7 +89,7 @@ def crear_graficos(df):
     except Exception as e:
         print(f"Error generando gráfico de barberos: {e}")
 
-    # Gráfico 2: Ingresos por Servicio
+    # --- Gráfico 2: Distribución de Ingresos por Servicio (Dona) ---
     try:
         ingresos_servicio = df.groupby('Nombre_Servicio')['Precio'].sum()
         if not ingresos_servicio.empty:
@@ -128,16 +110,14 @@ def crear_graficos(df):
             graficos['ingresos_servicio'] = buffer
     except Exception as e:
         print(f"Error generando gráfico de servicios: {e}")
-
+        
     return graficos
 
 def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
-    print("[PDF] Generando reporte...")
     pdf = PDF()
     pdf.add_page()
-
-    pdf.set_font('Arial', 'B', 11)
-    pdf.set_text_color(80, 80, 80)
+    
+    pdf.set_font('Arial', 'B', 11); pdf.set_text_color(80, 80, 80)
     pdf.cell(0, 8, f"Filtros Aplicados - Sede: {contexto_reporte.get('sede', 'N/A')}", 0, 1)
     pdf.set_font('Arial', '', 10)
     pdf.cell(0, 6, f"Periodo Analizado: {contexto_reporte.get('rango_fechas', 'N/A')}", 0, 1)
@@ -147,20 +127,22 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
     total_citas = len(df.dropna(subset=['ID_Cita']))
     total_ingresos = df['Precio'].sum()
     ingreso_promedio = df['Precio'].mean() if total_citas > 0 else 0
-
+    
     kpi_width = (pdf.w - pdf.l_margin - pdf.r_margin - 10) / 3
-    pdf.kpi_box("Citas Totales", f"{total_citas}", "", kpi_width)
-    pdf.set_x(pdf.get_x() + 5)
-    pdf.kpi_box("Ingresos Totales", f"${total_ingresos:,.0f}", "", kpi_width)
-    pdf.set_x(pdf.get_x() + 5)
+    pdf.kpi_box("Citas Totales", f"{total_citas}", "", kpi_width); pdf.set_x(pdf.get_x() + 5)
+    pdf.kpi_box("Ingresos Totales", f"${total_ingresos:,.0f}", "", kpi_width); pdf.set_x(pdf.get_x() + 5)
     pdf.kpi_box("Ingreso Promedio", f"${ingreso_promedio:,.0f}", "/ Cita", kpi_width)
     pdf.ln(28)
 
+    # --- INICIO DE LA CORRECCIÓN ---
     pdf.section_title('Análisis y Recomendaciones de IA')
-    analisis_ia_compatible = analisis_ia.encode('latin-1', 'replace').decode('latin-1')
+    # Codificamos el texto de la IA a 'latin-1' ignorando errores para mayor estabilidad
+    analisis_ia_compatible = analisis_ia.encode('latin-1', 'ignore').decode('latin-1')
     pdf.set_font('Arial', '', 10)
-    pdf.write_html(analisis_ia_compatible.replace('\n', '<br/>'))
+    # Usamos multi_cell, que es más robusto que write_html
+    pdf.multi_cell(0, 5, analisis_ia_compatible)
     pdf.ln(10)
+    # --- FIN DE LA CORRECCIÓN ---
 
     if not df.empty:
         pdf.section_title('Visualización de Datos')
@@ -170,12 +152,10 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
             if 'top_barberos' in graficos:
                 pdf.image(graficos['top_barberos'], w=pdf.w - 30, x=15)
                 pdf.ln(5)
+            
             if 'ingresos_servicio' in graficos:
                 pdf.image(graficos['ingresos_servicio'], w=pdf.w - 30, x=15)
         else:
             pdf.cell(0, 10, "No se generaron gráficos para la selección actual.", 0, 1)
-
-    print("[PDF] Renderizando salida final...")
-    pdf_bytes = bytes(pdf.output(dest='S').encode('latin1'))
-    print("[PDF] Generación completada ✅")
-    return pdf_bytes
+            
+    return bytes(pdf.output())
