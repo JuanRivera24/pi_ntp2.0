@@ -5,7 +5,6 @@ import base64
 import pandas as pd
 import requests
 import google.generativeai as genai
-from streamlit import experimental_rerun # 1. IMPORTAMOS LA FUNCIÓN
 
 # --- FUNCIÓN PARA CODIFICAR IMÁGENES ---
 def get_image_as_base64(path):
@@ -18,7 +17,7 @@ def get_image_as_base64(path):
 # --- FUNCIÓN DE DIAGNÓSTICO ---
 def run_diagnostics():
     """Ejecuta y muestra los resultados de las pruebas del sistema directamente en la página."""
-    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, tu API central y los datasets externos.")
+    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, los archivos CSV locales, tu API central y los datasets externos.")
     st.markdown("---")
 
     # TEST 1: Conexión a la API de Gemini
@@ -31,11 +30,10 @@ def run_diagnostics():
         st.success("✅ ¡ÉXITO! Conexión con la API de Google Gemini establecida.")
         with st.expander("Ver modelos encontrados"):
             st.write(models_list)
-            # Adaptado a un modelo estándar de Gemini
-            if any('gemini-1.5-flash' in model_name for model_name in models_list):
-                 st.success("Un modelo compatible ('gemini-1.5-flash') fue encontrado.")
+            if 'models/gemini-2.5-flash-preview-05-20' in models_list:
+                st.success("El modelo usado en el proyecto fue encontrado (gemini-2.5-flash-preview-05-20).")
             else:
-                 st.warning("ADVERTENCIA: No se encontró un modelo 'gemini-1.5-flash'.")
+                st.warning("ADVERTENCIA: El modelo usado en  no aparece en la lista.")
     except Exception as e:
         st.error("❌ ERROR: No se pudo conectar con la API de Google Gemini.")
         st.error(f"Detalle: {e}")
@@ -43,27 +41,23 @@ def run_diagnostics():
 
     st.markdown("---")
 
-    # TEST 2: Conexión a tu API
+    # TEST 2: Conexión a tu API Local
     st.subheader("2. Prueba de Conexión a la API")
-    if "API_URL" in st.secrets:
-        API_URL = st.secrets["API_URL"]
-        endpoints = ["clientes", "sedes", "servicios", "barberos", "citas-activas"] # Endpoints de ejemplo
-        with st.spinner("Probando conexión con los endpoints de la API..."):
-            all_successful = True
-            for endpoint in endpoints:
-                try:
-                    response = requests.get(f"{API_URL}/{endpoint}", timeout=10)
-                    response.raise_for_status()
-                    st.success(f"✅ Conexión exitosa con `/{endpoint}` ({len(response.json())} registros).")
-                except Exception as e:
-                    st.error(f"❌ ERROR al conectar con `/{endpoint}`. Revisa que tu API esté desplegada y funcionando.")
-                    st.expander("Ver detalle del error").error(e)
-                    all_successful = False
-            if all_successful:
-                st.success("✅ ¡ÉXITO! Todos los endpoints de la API respondieron correctamente.")
-    else:
-        st.error("❌ ERROR: La variable `API_URL` no está configurada en los secretos de Streamlit.")
-
+    API_URL = st.secrets["API_URL"]
+    endpoints = ["clientes", "historial/citas", "barberos", "sedes", "servicios"]
+    with st.spinner("Probando conexión con los endpoints de la API..."):
+        all_successful = True
+        for endpoint in endpoints:
+            try:
+                response = requests.get(f"{API_URL}/{endpoint}", timeout=5)
+                response.raise_for_status()
+                st.success(f"✅ Conexión exitosa con `/{endpoint}` ({len(response.json())} registros).")
+            except Exception as e:
+                st.error(f"❌ ERROR al conectar con `/{endpoint}`. Revisa que tu API (ApiApplication.java) esté corriendo.")
+                st.expander("Ver detalle del error").error(e)
+                all_successful = False
+        if all_successful:
+            st.success("✅ ¡ÉXITO! Todos los endpoints de la API respondieron correctamente.")
 
     st.markdown("---")
 
@@ -71,12 +65,14 @@ def run_diagnostics():
     st.subheader("3. Prueba de Carga de Datasets Externos")
     datasets_externos = {
         "Nacional - Establecimientos de Belleza": "https://www.datos.gov.co/api/views/e27n-di57/rows.csv?accessType=DOWNLOAD",
+        "Risaralda - Estética Facial y Corporal": "https://www.datos.gov.co/api/views/92e4-cjqu/rows.csv?accessType=DOWNLOAD",
+        "Estética Local (Ejemplo)": "https://www.datos.gov.co/api/views/mwxa-drpn/rows.csv?accessType=DOWNLOAD",
     }
-    with st.spinner("Probando la descarga de datasets de datos.gov.co..."):
+    with st.spinner("Probando la descarga y lectura de los datasets de datos.gov.co..."):
         all_successful_external = True
         for nombre, url in datasets_externos.items():
             try:
-                df = pd.read_csv(url, nrows=10)
+                df = pd.read_csv(url, nrows=10) # Leemos solo 10 filas para una prueba rápida
                 st.success(f"✅ Carga exitosa de '{nombre}'.")
             except Exception as e:
                 st.error(f"❌ ERROR al cargar el dataset '{nombre}'.")
@@ -87,7 +83,7 @@ def run_diagnostics():
 
 
 # --- Rutas a las imágenes ---
-ASSETS_DIR = "assets"
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 img_hero_path = os.path.join(ASSETS_DIR, "barber_hero.jpg")
 img_logo_path = os.path.join(ASSETS_DIR, "Logo.png")
 img_dev1_path = os.path.join(ASSETS_DIR, "1Desarrollador.png")
@@ -113,7 +109,7 @@ with col1:
     if img_hero_path and os.path.exists(img_hero_path):
         st.image(img_hero_path, caption="El arte del cuidado masculino.", use_container_width=True)
     st.markdown(
-        """<div style="text-align: center; margin-top: 20px;"><a href="https://pi-web2-0-two.vercel.app" target="_blank"><button style="background-color:#D4AF37; border:none; color:black; padding:12px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold;">🌐 Visita nuestro sitio web</button></a></div>""",
+        """<div style="text-align: center; margin-top: 20px;"><a href="https://pi-web2-six.vercel.app" target="_blank"><button style="background-color:#D4AF37; border:none; color:black; padding:12px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold;">🌐 Visita nuestro sitio web</button></a></div>""",
         unsafe_allow_html=True
     )
 with col2:
@@ -124,42 +120,14 @@ with col2:
     st.markdown("#### **¿Qué puedes hacer?**\n- **📊 Dashboard:** Analiza métricas clave.\n- **🗓️ Gestión de Citas:** Organiza tu agenda.\n- **🤖 Asistente IA:** Crea comunicaciones únicas.\n- **📂 Datasets:** Analiza datos reales.")
 
 # --- Barra Lateral (Sidebar) ---
-with st.sidebar:
-    # --- INICIO DE LA CORRECCIÓN ---
-    # Creamos un CSS para hacer el botón invisible
-    st.markdown("""
-        <style>
-            div[data-testid="stButton.primary"] button {
-                background-color: transparent;
-                border: none;
-                padding: 0;
-                margin: 0;
-            }
-            div[data-testid="stButton.primary"] button:hover {
-                background-color: transparent;
-            }
-            div[data-testid="stButton.primary"] button:active {
-                background-color: transparent;
-                border: none;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+if img_logo_path and os.path.exists(img_logo_path):
+    st.sidebar.image(img_logo_path, width=100)
+st.sidebar.title("Menú de Navegación")
+st.sidebar.success("Selecciona una página para comenzar.")
+st.sidebar.markdown("---")
 
-    # Creamos un botón "invisible" sobre la imagen
-    if st.button("logo_recarga", type="primary", use_container_width=True):
-        experimental_rerun()
-    
-    # Ponemos la imagen justo debajo del botón (visualmente se superponen)
-    if img_logo_path and os.path.exists(img_logo_path):
-        st.image(img_logo_path, width=100)
-    # --- FIN DE LA CORRECCIÓN ---
-
-    st.title("Menú de Navegación")
-    st.success("Selecciona una página para comenzar.")
-    st.markdown("---")
-
-    # Botón para ejecutar el diagnóstico
-    run_button = st.button("Ejecutar Diagnóstico del Sistema", use_container_width=True)
+# Botón para ejecutar el diagnóstico
+run_button = st.sidebar.button("Ejecutar Diagnóstico del Sistema", use_container_width=True)
 
 # --- Sección de Desarrolladores ---
 st.markdown("<br><br><h2 style='text-align: center; color: #D4AF37;'>Conoce a los Desarrolladores</h2><hr style='border: 1px solid #D4AF37;'>", unsafe_allow_html=True)
@@ -177,6 +145,7 @@ with col_dev3:
 
 
 # --- SECCIÓN DE DIAGNÓSTICO ---
+# Si el botón fue presionado, el script se re-ejecuta y esta condición es verdadera.
 if run_button:
     st.markdown("<br><hr>", unsafe_allow_html=True)
     st.title("Resultados del Diagnóstico del Sistema")
