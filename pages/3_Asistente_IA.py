@@ -335,7 +335,7 @@ with tab_asesor:
                             st.divider()
                             st.markdown("### 💈 Mis recomendaciones para ti:")
                             st.markdown(response.text)
-                            st.link_button("📅 ¡Reserva tu cita ahora!", "http://localhost:3000", type="primary")
+                            st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
                         except Exception as e:
                             st.error("¡Oops! Ocurrió un error al analizar la imagen.")
                             st.exception(e)
