@@ -17,7 +17,7 @@ def get_image_as_base64(path):
 # --- FUNCIÓN DE DIAGNÓSTICO ---
 def run_diagnostics():
     """Ejecuta y muestra los resultados de las pruebas del sistema directamente en la página."""
-    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, los archivos CSV locales, tu API central y los datasets externos.")
+    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, la API desplegada y los datasets externos.")
     st.markdown("---")
 
     # TEST 1: Conexión a la API de Gemini
