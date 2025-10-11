@@ -17,7 +17,7 @@ def get_image_as_base64(path):
 # --- FUNCIÓN DE DIAGNÓSTICO ---
 def run_diagnostics():
     """Ejecuta y muestra los resultados de las pruebas del sistema directamente en la página."""
-    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, los archivos CSV locales, tu API central y los datasets externos.")
+    st.markdown("Esta sección comprueba las conexiones a la API de Gemini, la API desplegada y los datasets externos.")
     st.markdown("---")
 
     # TEST 1: Conexión a la API de Gemini
@@ -108,26 +108,39 @@ col1, col2 = st.columns([0.6, 0.4], gap="large")
 with col1:
     if img_hero_path and os.path.exists(img_hero_path):
         st.image(img_hero_path, caption="El arte del cuidado masculino.", use_container_width=True)
-    st.markdown(
-        """<div style="text-align: center; margin-top: 20px;"><a href="https://pi-web2-six.vercel.app" target="_blank"><button style="background-color:#D4AF37; border:none; color:black; padding:12px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold;">🌐 Visita nuestro sitio web</button></a></div>""",
-        unsafe_allow_html=True
-    )
+
 with col2:
     st.markdown("<h1 style='text-align: left; color: #D4AF37;'>👑 Kingdom Barber</h1>", unsafe_allow_html=True)
     st.markdown("## Bienvenido al Panel de Gestión")
     st.markdown("Este es tu centro de control para administrar la barbería con eficiencia y estilo.")
     st.markdown("---")
     st.markdown("#### **¿Qué puedes hacer?**\n- **📊 Dashboard:** Analiza métricas clave.\n- **🗓️ Gestión de Citas:** Organiza tu agenda.\n- **🤖 Asistente IA:** Crea comunicaciones únicas.\n- **📂 Datasets:** Analiza datos reales.")
-
+    st.markdown("---")
+    st.markdown(
+        """<div style="text-align: center; margin-top: 20px;"><a href="https://pi-web2-six.vercel.app" target="_blank"><button style="background-color:#D4AF37; border:none; color:black; padding:12px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold;">🌐 Visita nuestro sitio web</button></a></div>""",
+        unsafe_allow_html=True
+    )
 # --- Barra Lateral (Sidebar) ---
-if img_logo_path and os.path.exists(img_logo_path):
-    st.sidebar.image(img_logo_path, width=100)
+logo_base64 = get_image_as_base64(img_logo_path)
+if logo_base64:
+    # **CAMBIO CLAVE**: Se usa HTML para hacer el logo clickeable y que recargue la página.
+    st.sidebar.markdown(
+        f"""
+        <a href="." target="_self">
+            <img src="data:image/png;base64,{logo_base64}" width="100" style="cursor: pointer;">
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
+
 st.sidebar.title("Menú de Navegación")
 st.sidebar.success("Selecciona una página para comenzar.")
 st.sidebar.markdown("---")
 
 # Botón para ejecutar el diagnóstico
 run_button = st.sidebar.button("Ejecutar Diagnóstico del Sistema", use_container_width=True)
+
+st.markdown("---")
 
 # --- Sección de Desarrolladores ---
 st.markdown("<br><br><h2 style='text-align: center; color: #D4AF37;'>Conoce a los Desarrolladores</h2><hr style='border: 1px solid #D4AF37;'>", unsafe_allow_html=True)
@@ -141,7 +154,7 @@ with col_dev2:
         st.markdown(f'<div class="developer-card"><img src="data:image/png;base64,{dev2_base64}" class="developer-image"><h4>Juan Manuel Rivera Restrepo</h4><p>📞 +57 302 3676712<br>📧 <a href="mailto:jmriverare@cesde.net">jmriverare@cesde.net</a><br>🐙 <a href="https://github.com/JuanRivera24" target="_blank">JuanRivera24</a></p></div>', unsafe_allow_html=True)
 with col_dev3:
     if dev3_base64:
-        st.markdown(f'<div class="developer-card"><img src="data:image/png;base64,{dev3_base64}" class="developer-image"><h4>Alejandro Urrego Cardona</h4><p>📞 +57 314 7692898<br>📧 <a href="mailto:aurregoc@cesde.net">aurregoc@cesde.net</a><br>🐙 <a href="https://github.com/AlejoU" target="_blank">AlejoU</a></p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="developer-card"><img src="data:image/png;base64,{dev3_base64}" class="developer-image"><h4>Alejandro Urrego Cardona</h4><p>📞 +57 314 7692898<br>📧 <a href="mailto:aurregoc@cesde.net">aurregoc@cesde.net</a><br>🐙 <a href="https://github.com/alejourrego" target="_blank">AlejoU</a></p></div>', unsafe_allow_html=True)
 
 
 # --- SECCIÓN DE DIAGNÓSTICO ---
