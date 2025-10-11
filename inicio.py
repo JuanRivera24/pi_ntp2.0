@@ -108,17 +108,17 @@ col1, col2 = st.columns([0.6, 0.4], gap="large")
 with col1:
     if img_hero_path and os.path.exists(img_hero_path):
         st.image(img_hero_path, caption="El arte del cuidado masculino.", use_container_width=True)
-    st.markdown(
-        """<div style="text-align: center; margin-top: 20px;"><a href="https://pi-web2-six.vercel.app" target="_blank"><button style="background-color:#D4AF37; border:none; color:black; padding:12px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold;">🌐 Visita nuestro sitio web</button></a></div>""",
-        unsafe_allow_html=True
-    )
+
 with col2:
     st.markdown("<h1 style='text-align: left; color: #D4AF37;'>👑 Kingdom Barber</h1>", unsafe_allow_html=True)
     st.markdown("## Bienvenido al Panel de Gestión")
     st.markdown("Este es tu centro de control para administrar la barbería con eficiencia y estilo.")
     st.markdown("---")
     st.markdown("#### **¿Qué puedes hacer?**\n- **📊 Dashboard:** Analiza métricas clave.\n- **🗓️ Gestión de Citas:** Organiza tu agenda.\n- **🤖 Asistente IA:** Crea comunicaciones únicas.\n- **📂 Datasets:** Analiza datos reales.")
-
+    st.markdown(
+        """<div style="text-align: center; margin-top: 20px;"><a href="https://pi-web2-six.vercel.app" target="_blank"><button style="background-color:#D4AF37; border:none; color:black; padding:12px 24px; text-align:center; text-decoration:none; display:inline-block; font-size:16px; border-radius:8px; cursor:pointer; font-weight:bold;">🌐 Visita nuestro sitio web</button></a></div>""",
+        unsafe_allow_html=True
+    )
 # --- Barra Lateral (Sidebar) ---
 logo_base64 = get_image_as_base64(img_logo_path)
 if logo_base64:
