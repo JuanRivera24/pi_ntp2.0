@@ -154,7 +154,7 @@ with col_dev2:
         st.markdown(f'<div class="developer-card"><img src="data:image/png;base64,{dev2_base64}" class="developer-image"><h4>Juan Manuel Rivera Restrepo</h4><p>📞 +57 302 3676712<br>📧 <a href="mailto:jmriverare@cesde.net">jmriverare@cesde.net</a><br>🐙 <a href="https://github.com/JuanRivera24" target="_blank">JuanRivera24</a></p></div>', unsafe_allow_html=True)
 with col_dev3:
     if dev3_base64:
-        st.markdown(f'<div class="developer-card"><img src="data:image/png;base64,{dev3_base64}" class="developer-image"><h4>Alejandro Urrego Cardona</h4><p>📞 +57 314 7692898<br>📧 <a href="mailto:aurregoc@cesde.net">aurregoc@cesde.net</a><br>🐙 <a href="https://github.com/AlejoU" target="_blank">AlejoU</a></p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="developer-card"><img src="data:image/png;base64,{dev3_base64}" class="developer-image"><h4>Alejandro Urrego Cardona</h4><p>📞 +57 314 7692898<br>📧 <a href="mailto:aurregoc@cesde.net">aurregoc@cesde.net</a><br>🐙 <a href="https://github.com/alejourrego" target="_blank">AlejoU</a></p></div>', unsafe_allow_html=True)
 
 
 # --- SECCIÓN DE DIAGNÓSTICO ---
