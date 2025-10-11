@@ -357,8 +357,8 @@ with tab_asesor:
                                 {cortes_disponibles_str}
 
                                 **TU TAREA (Formato Estricto Requerido):**
-                                1.  **Diagnóstico del Rostro:** Identifica la forma del rostro (ej. Ovalado, Cuadrado, Redondo).
-                                2.  **Recomendaciones (Top 2):** Proporciona dos recomendaciones. Para cada una, sigue EXACTAMENTE este formato detallado:
+                                1.  **Diagnóstico del Rostro:** Identifica la forma del rostro (ej. Ovalado, Cuadrado, Redondo, etc).
+                                2.  **Recomendaciones (Top 3):** Proporciona tres recomendaciones. Para cada una, sigue EXACTAMENTE este formato detallado:
 
                                 ### Recomendación [NÚMERO]
                                 - **Nombre del Estilo:** [Elige el nombre MÁS APROPIADO de la LISTA DE CORTES VÁLIDOS].
