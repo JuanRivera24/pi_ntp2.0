@@ -425,25 +425,26 @@ with tab_hazme_corte:
 
                             generated_response = model.generate_content(prompt_generacion_corte)
                             
-                            # --- LÓGICA DE VERIFICACIÓN MEJORADA ---
-                            image_part = None
+                            # --- LÓGICA DE VERIFICACIÓN DEFINITIVA ---
+                            image_found = False
                             for part in generated_response.parts:
-                                if part.mime_type.startswith("image/"):
-                                    image_part = part
-                                    break
+                                # Comprueba de forma segura si la parte contiene un blob de imagen
+                                if hasattr(part, 'blob') and hasattr(part.blob, 'mime_type') and part.blob.mime_type.startswith("image/"):
+                                    st.success("¡Aquí está tu nuevo look!")
+                                    st.image(
+                                        part.blob.data,  # Accede a los datos a través del blob
+                                        caption=f"Tu look con el corte: {corte_deseado}",
+                                        use_container_width=True
+                                    )
+                                    st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
+                                    image_found = True
+                                    break  # Sal del bucle una vez encontrada la imagen
                             
-                            if image_part:
-                                st.success("¡Aquí está tu nuevo look!")
-                                st.image(
-                                    image_part.data, 
-                                    caption=f"Tu look con el corte: {corte_deseado}", 
-                                    use_container_width=True
-                                )
-                                st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
-                            else:
+                            if not image_found:
                                 # Si no se encontró una imagen, muestra la respuesta de texto del modelo
                                 st.error("La IA no pudo generar una imagen.")
                                 st.warning("Respuesta del modelo:")
+                                # Usa el acceso directo .text para obtener toda la respuesta de texto
                                 st.markdown(f"> {generated_response.text}")
                                 
                         except Exception as e:
