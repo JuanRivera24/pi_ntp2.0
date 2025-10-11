@@ -121,19 +121,12 @@ with col2:
 
 # --- Barra Lateral (Sidebar) ---
 if img_logo_path and os.path.exists(img_logo_path):
-    with open(img_logo_path, "rb") as f:
-        logo_base64 = base64.b64encode(f.read()).decode()
+    # Mostrar el logo como botón
+    with st.sidebar:
+        if st.button(" ", key="logo_button"):
+            st.experimental_rerun()
+        st.image(img_logo_path, width=100)
 
-    st.sidebar.markdown(
-        f"""
-        <div style="text-align:center;">
-            <a href="#" onclick="window.location.reload();">
-                <img src="data:image/png;base64,{logo_base64}" width="100" style="cursor:pointer;" title="Recargar página">
-            </a>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 st.sidebar.title("Menú de Navegación")
 st.sidebar.success("Selecciona una página para comenzar.")
 st.sidebar.markdown("---")
