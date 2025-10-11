@@ -387,18 +387,17 @@ with tab_hazme_corte:
                 "Mohawk", "Faux Hawk (Fohawk)"
             ]
             
-            # Opción de selección o escritura libre
             modo_corte = st.radio("¿Cómo quieres especificar el corte?", ["Seleccionar de la lista", "Escribir libremente"], horizontal=True)
             
             corte_deseado = ""
             if modo_corte == "Seleccionar de la lista":
                 corte_deseado = st.selectbox("Elige un estilo de corte:", [''] + sorted(lista_cortes_populares))
             else:
-                corte_deseado = st.text_input("Describe el corte que deseas (ej. 'Long Bob con flequillo'):", placeholder="Ej: Buzz Cut con desvanecido", key="input_corte_libre")
+                corte_deseado = st.text_input("Describe el corte que deseas:", placeholder="Ej: Buzz Cut con desvanecido", key="input_corte_libre")
             
             especificaciones_adicionales = st.text_area(
-                "Añade especificaciones (color, textura, longitud, etc.):",
-                placeholder="Ej: Pelo rubio platino y liso, un poco más largo en la parte de arriba, o rizado y castaño oscuro.",
+                "Añade especificaciones (color, textura, etc.):",
+                placeholder="Ej: Pelo rubio platino y liso, o rizado y castaño oscuro.",
                 key="especificaciones_corte"
             )
 
@@ -410,40 +409,43 @@ with tab_hazme_corte:
                 else:
                     with st.spinner("¡Tu nuevo look está tomando forma! Esto puede tardar un momento... ⏳"):
                         try:
-                            # Prompt más avanzado para la generación de imagen
                             prompt_generacion_corte = [
                                 f"""
-                                Eres un estilista de IA muy talentoso y un editor de fotos profesional.
-                                Tu única tarea es modificar la imagen de la persona que te proporciono.
-                                
+                                Eres un estilista de IA y editor de fotos profesional.
+                                Tu única tarea es modificar la imagen que te proporciono.
                                 **Instrucciones clave:**
-                                1.  Aplica a la persona de la imagen un corte de cabello **estilo '{corte_deseado}'**.
-                                2.  **Mantén el rostro, la expresión, la ropa, el fondo y la iluminación de la foto original lo más idénticos posible.**
-                                    Solo cambia el cabello.
-                                3.  **Considera las siguientes especificaciones adicionales:** {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna especificación adicional.'}
-                                4.  **Analiza la foto para identificar si la persona es hombre o mujer y aplica un corte apropiado para su género**, a menos que las especificaciones adicionales indiquen lo contrario (ej. 'Pelo largo para hombre').
-                                5.  La imagen final debe ser una fotografía realista y de alta calidad del nuevo look.
+                                1. Aplica un corte de cabello estilo '{corte_deseado}'.
+                                2. **Mantén el rostro, la expresión, la ropa, el fondo y la iluminación de la foto original.** Solo cambia el cabello.
+                                3. Considera estas especificaciones adicionales: {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna.'}
+                                4. Analiza la foto para identificar el género de la persona y aplica un corte apropiado.
+                                5. La imagen final debe ser una fotografía realista y de alta calidad.
                                 """,
                                 image_corte,
                             ]
 
                             generated_response = model.generate_content(prompt_generacion_corte)
                             
-                            if hasattr(generated_response, 'parts') and generated_response.parts:
-                                generated_image_output = generated_response.parts[0]
+                            # --- LÓGICA DE VERIFICACIÓN MEJORADA ---
+                            image_part = None
+                            for part in generated_response.parts:
+                                if part.mime_type.startswith("image/"):
+                                    image_part = part
+                                    break
+                            
+                            if image_part:
                                 st.success("¡Aquí está tu nuevo look!")
-                                
                                 st.image(
-                                    generated_image_output.data, 
+                                    image_part.data, 
                                     caption=f"Tu look con el corte: {corte_deseado}", 
                                     use_container_width=True
                                 )
-                                
                                 st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
                             else:
-                                st.error("No se pudo obtener la imagen generada. El modelo no devolvió una parte de imagen.")
-                                st.json(generated_response.to_dict())
+                                # Si no se encontró una imagen, muestra la respuesta de texto del modelo
+                                st.error("La IA no pudo generar una imagen.")
+                                st.warning("Respuesta del modelo:")
+                                st.markdown(f"> {generated_response.text}")
                                 
                         except Exception as e:
-                            st.error("¡Oops! Ocurrió un error al generar tu nuevo corte. Asegúrate de que la descripción sea clara y la imagen de buena calidad.")
+                            st.error("¡Oops! Ocurrió un error al procesar la solicitud.")
                             st.exception(e)
