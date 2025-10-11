@@ -425,28 +425,40 @@ with tab_hazme_corte:
 
                             generated_response = model.generate_content(prompt_generacion_corte)
                             
-                            # --- LÓGICA DE VERIFICACIÓN DEFINITIVA ---
-                            image_found = False
-                            for part in generated_response.parts:
-                                # Comprueba de forma segura si la parte contiene un blob de imagen
-                                if hasattr(part, 'blob') and hasattr(part.blob, 'mime_type') and part.blob.mime_type.startswith("image/"):
-                                    st.success("¡Aquí está tu nuevo look!")
-                                    st.image(
-                                        part.blob.data,  # Accede a los datos a través del blob
-                                        caption=f"Tu look con el corte: {corte_deseado}",
-                                        use_container_width=True
-                                    )
-                                    st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
-                                    image_found = True
-                                    break  # Sal del bucle una vez encontrada la imagen
-                            
-                            if not image_found:
-                                # Si no se encontró una imagen, muestra la respuesta de texto del modelo
-                                st.error("La IA no pudo generar una imagen.")
-                                st.warning("Respuesta del modelo:")
-                                # Usa el acceso directo .text para obtener toda la respuesta de texto
-                                st.markdown(f"> {generated_response.text}")
+                            # --- VERIFICACIÓN DE SEGURIDAD PRIMERO ---
+                            if generated_response.prompt_feedback.block_reason:
+                                st.error("La solicitud fue bloqueada por las políticas de seguridad de la IA.")
+                                st.warning(f"Razón del bloqueo: **{generated_response.prompt_feedback.block_reason.name}**")
+                                st.info("Intenta con una imagen diferente o una descripción más general.")
+                            else:
+                                # Si no fue bloqueado, procede a buscar la imagen
+                                image_found = False
+                                for part in generated_response.parts:
+                                    if hasattr(part, 'blob') and hasattr(part.blob, 'mime_type') and part.blob.mime_type.startswith("image/"):
+                                        st.success("¡Aquí está tu nuevo look!")
+                                        st.image(
+                                            part.blob.data,
+                                            caption=f"Tu look con el corte: {corte_deseado}",
+                                            use_container_width=True
+                                        )
+                                        st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
+                                        image_found = True
+                                        break
                                 
+                                if not image_found:
+                                    st.error("La IA no pudo generar una imagen, pero no fue por un bloqueo de seguridad.")
+                                    st.warning("Respuesta del modelo:")
+                                    # Es seguro acceder a .text si no fue bloqueado y no hay imagen
+                                    st.markdown(f"> {generated_response.text}")
+                                    
+                        except ValueError as e:
+                            # Captura el error específico de respuesta vacía
+                            if "response.text" in str(e):
+                                st.error("La IA devolvió una respuesta completamente vacía, probablemente debido a un bloqueo de seguridad no informado.")
+                                st.info("Prueba a ajustar la configuración de seguridad o modifica el prompt.")
+                            else:
+                                st.error("Ocurrió un error inesperado con los datos.")
+                                st.exception(e)
                         except Exception as e:
-                            st.error("¡Oops! Ocurrió un error al procesar la solicitud.")
+                            st.error("¡Oops! Ocurrió un error general al procesar la solicitud.")
                             st.exception(e)
