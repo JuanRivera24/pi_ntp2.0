@@ -339,7 +339,7 @@ with tab_asesor:
                         except Exception as e:
                             st.error("¡Oops! Ocurrió un error al analizar la imagen.")
                             st.exception(e)
-                            
+
 # --- PESTAÑA 6: HAZME UN NUEVO CORTE (GENERACIÓN DIRECTA) ---
 with tab_hazme_corte:
     st.header("🎨 Experimenta tu Nuevo Look")
@@ -357,14 +357,34 @@ with tab_hazme_corte:
         with col_ops:
             st.markdown("### ✂️ Define tu Estilo")
 
-            # Lista de cortes populares (añade más si quieres)
+            # Lista de cortes populares ampliada y categorizada
             lista_cortes_populares = [
-                "Wolf Cut", "Dreadlocks", "Buzz Cut", "Braids", "Slick Back",
-                "Curly Shag", "Shaggy Cut", "Bob Cut", "Pixie Cut", "Mullet",
-                "Messy Hair", "Mid Part", "Taper Fade", "French Crop", "Undercut",
-                "Quiff", "Fringe", "Crew Cut", "High and Tight", "Side Part",
-                "Afro", "Pompadour", "Bowl Cut", "Asymmetrical Cut", "Feathered Hair",
-                "Layered Cut", "Perm", "Cornrows", "Mohawk", "Bangs", "Long Layers"
+                # --- Cortes Cortos ---
+                "Buzz Cut", "Crew Cut", "High and Tight", "Ivy League", "French Crop",
+                "Pixie Cut", "Caesar Cut", "Taper Fade", "Skin Fade", "Flat Top",
+                # --- Cortes Medianos ---
+                "Slick Back", "Pompadour", "Quiff", "Undercut", "Side Part",
+                "Bro Flow", "Mid Part (Cortina)", "Bowl Cut", "Shaggy Cut",
+                "Bob Cut", "Lob (Long Bob)", "Asymmetrical Bob", "Pageboy Cut",
+                # --- Cortes Largos ---
+                "Long Layers (Capas Largas)", "Feathered Hair (Cabello en Plumas)",
+                "Man Bun", "Top Knot", "Long and Straight", "Long and Wavy",
+                "V-Cut Layers",
+                # --- Cortes con Textura y Estilo ---
+                "Curly Shag", "Messy Hair", "Spiky Hair", "Fringe (Flequillo)",
+                "Bangs (Flequillo Recto)", "Wavy Bob", "Afro", "Perm (Permanente)",
+                "Textured Crop",
+                # --- Cortes Clásicos y Retro ---
+                "Mullet", "Jheri Curl", "Hi-Top Fade", "Ducktail", "Hime Cut",
+                # --- Estilos con Trenzas y Rastas ---
+                "Braids (Trenzas)", "Cornrows (Trenzas pegadas)", "Box Braids",
+                "Dreadlocks", "Viking Braids",
+                # --- Cortes de Tendencia ---
+                "Wolf Cut", "Butterfly Cut", "Octopus Cut", "Jellyfish Cut",
+                "Bixie Cut (Bob-Pixie)",
+                # --- Cortes con Diseños ---
+                "Hair Tattoo / Hair Design", "Hard Part (Línea Marcada)",
+                "Mohawk", "Faux Hawk (Fohawk)"
             ]
             
             # Opción de selección o escritura libre
@@ -409,19 +429,21 @@ with tab_hazme_corte:
 
                             generated_response = model.generate_content(prompt_generacion_corte)
                             
-                            # Asumiendo que el objeto generado tiene una forma de acceder a la imagen
-                            # Esto puede variar ligeramente dependiendo de cómo el modelo de Gemini devuelve la imagen
-                            # Si da un error aquí, revisa la estructura de 'generated_response' en la documentación de Gemini
                             if hasattr(generated_response, 'parts') and generated_response.parts:
                                 generated_image_output = generated_response.parts[0]
                                 st.success("¡Aquí está tu nuevo look!")
-                                st.image(generated_image_output, caption=f"Tu look con el corte: {corte_deseado}", use_column_width=True)
+                                
+                                st.image(
+                                    generated_image_output.data, 
+                                    caption=f"Tu look con el corte: {corte_deseado}", 
+                                    use_container_width=True
+                                )
+                                
                                 st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
                             else:
                                 st.error("No se pudo obtener la imagen generada. El modelo no devolvió una parte de imagen.")
-                                st.json(generated_response.to_dict()) # Para depuración: ver la respuesta completa
+                                st.json(generated_response.to_dict())
                                 
-
                         except Exception as e:
                             st.error("¡Oops! Ocurrió un error al generar tu nuevo corte. Asegúrate de que la descripción sea clara y la imagen de buena calidad.")
                             st.exception(e)
