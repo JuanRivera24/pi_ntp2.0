@@ -140,6 +140,8 @@ st.sidebar.markdown("---")
 # Botón para ejecutar el diagnóstico
 run_button = st.sidebar.button("Ejecutar Diagnóstico del Sistema", use_container_width=True)
 
+st.markdown("---")
+
 # --- Sección de Desarrolladores ---
 st.markdown("<br><br><h2 style='text-align: center; color: #D4AF37;'>Conoce a los Desarrolladores</h2><hr style='border: 1px solid #D4AF37;'>", unsafe_allow_html=True)
 st.markdown("""<style>.developer-card{background-color:#262730;border-radius:15px;padding:20px;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;}.developer-image{width:120px;height:160px;border-radius:10px;object-fit:cover;margin-bottom:15px;border:3px solid #D4AF37;}</style>""", unsafe_allow_html=True)
