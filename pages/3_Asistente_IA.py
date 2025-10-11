@@ -411,18 +411,16 @@ with tab_hazme_corte:
                     with st.spinner("¡Tu nuevo look está tomando forma! Esto puede tardar un momento... ⏳"):
                         try:
                             prompt_generacion_corte = [
-                                f"""
-                                Eres un estilista de IA y editor de fotos profesional.
-                                Tu única tarea es modificar la imagen que te proporciono.
-                                **Instrucciones clave:**
-                                1. Aplica un corte de cabello estilo '{corte_deseado}'.
-                                2. **Mantén el rostro, la expresión, la ropa, el fondo y la iluminación de la foto original.** Solo cambia el cabello.
-                                3. Considera estas especificaciones adicionales: {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna.'}
-                                4. Analiza la foto para identificar el género de la persona y aplica un corte apropiado.
-                                5. La imagen final debe ser una fotografía realista y de alta calidad.
-                                """,
-                                image_corte,
-                            ]
+    f"""
+    Eres un estilista de IA. Tu tarea es visualizar un nuevo look.
+    Modifica la apariencia del cabello en la imagen para aplicar un corte estilo '{corte_deseado}'.
+    **Es crucial que, si la imagen contiene un rostro humano, la edición se realice como si fuera un modelo 3D o una ilustración estilizada.**
+    Mantén el rostro, la expresión y la pose, pero el cabello debe transformarse.
+    Considera estas especificaciones adicionales: {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna.'}
+    La imagen final debe ser una visualización clara del nuevo corte. No tiene que ser fotorrealista si es un rostro humano.
+    """,
+    image_corte,
+]
 
                             # Define la configuración de seguridad para ser menos restrictiva
                             safety_settings = {
