@@ -327,10 +327,10 @@ with tab_oportunidades:
                 except Exception as e:
                     st.error(f"No se pudo generar el análisis de oportunidades: {e}")
 
-# --- PESTAÑA 5: ASESOR DE ESTILO VIRTUAL (MODIFICADO) ---
+# --- PESTAÑA 5: ASESOR DE ESTilo VIRTUAL (VERSIÓN COMBINADA Y MEJORADA) ---
 with tab_asesor:
     st.header("✂️ Asesor de Estilo Virtual con IA")
-    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello que podrás probar en la siguiente pestaña.")
+    st.markdown("Sube una foto, recibe recomendaciones detalladas y pruébalas en la siguiente pestaña.")
     
     uploaded_file = st.file_uploader("Sube una foto donde tu rostro se vea claramente", type=["jpg", "jpeg", "png"], key="style_uploader")
     
@@ -351,21 +351,24 @@ with tab_asesor:
 
                             prompt_parts = [
                                 f"""
-                                Actúa como un estilista de élite y experto en visagismo. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen.
+                                Actúa como un estilista de élite y experto en visagismo. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen completa y funcional.
 
                                 LISTA DE CORTES VÁLIDOS PARA RECOMENDAR:
                                 {cortes_disponibles_str}
 
                                 **TU TAREA (Formato Estricto Requerido):**
                                 1.  **Diagnóstico del Rostro:** Identifica la forma del rostro (ej. Ovalado, Cuadrado, Redondo).
-                                2.  **Recomendaciones (Top 2):** Proporciona dos recomendaciones. Para cada una, sigue EXACTAMENTE este formato:
+                                2.  **Recomendaciones (Top 2):** Proporciona dos recomendaciones. Para cada una, sigue EXACTAMENTE este formato detallado:
 
                                 ### Recomendación [NÚMERO]
-                                - **Nombre del Estilo:** [Elige el nombre MÁS APROPIADO de la LISTA DE CORTES VÁLIDOS que te proporcioné].
-                                - **Análisis del Estilista:** [Explica brevemente en una frase por qué este corte le favorece según su tipo de rostro].
+                                - **Nombre del Estilo:** [Elige el nombre MÁS APROPIADO de la LISTA DE CORTES VÁLIDOS].
+                                - **Análisis del Estilista:** [Explica en una frase por qué este corte le favorece].
+                                - **Nivel de Mantenimiento:** [Indica si es Bajo, Medio o Alto].
+                                - **Productos Recomendados:** [Sugiere 1-2 productos, ej: Cera mate, pomada, aceite para barba].
+                                - **Inspiración Visual:** [Proporciona un enlace de búsqueda de Google Images para este estilo].
                                 - **Especificaciones para Copiar:**
                                 ```
-                                [Aquí, escribe especificaciones detalladas y creativas que el usuario pueda copiar y pegar en la otra pestaña. Incluye detalles sobre textura (liso, ondulado, rizado), longitud, color sugerido, tipo de desvanecido, etc. Sé específico. Por ejemplo: "Cabello ondulado con textura natural, color castaño claro con reflejos sutiles, longitud media en la parte superior, desvanecido bajo (low fade) en los lados."]
+                                [Aquí, escribe especificaciones detalladas y creativas que el usuario pueda copiar y pegar. Incluye detalles sobre textura (liso, ondulado), longitud, color sugerido, tipo de desvanecido, etc. Sé específico. Por ejemplo: "Cabello ondulado con textura natural, color castaño claro con reflejos sutiles, longitud media en la parte superior, desvanecido bajo (low fade) en los lados."]
                                 ```
                                 """,
                                 image,
@@ -383,7 +386,7 @@ with tab_asesor:
                             
                             st.divider()
                             st.markdown("### 💈 Mis recomendaciones para ti:")
-                            st.info("Copia el nombre del estilo y las especificaciones en la pestaña 'Hazme un Nuevo Corte' para probarlos.")
+                            st.info("Copia el 'Nombre del Estilo' y las 'Especificaciones' en la pestaña 'Hazme un Nuevo Corte' para generar una vista previa.")
                             st.markdown(response.text)
                             st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
                         
