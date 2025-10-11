@@ -298,10 +298,11 @@ with tab_oportunidades:
                 except Exception as e:
                     st.error(f"No se pudo generar el análisis de oportunidades: {e}")
 
-# --- PESTAÑA 5: ASESOR DE ESTILO VIRTUAL ---
+# --- PESTAÑA 5: ASESOR DE ESTILO VIRTUAL (MODIFICADO) ---
 with tab_asesor:
     st.header("✂️ Asesor de Estilo Virtual con IA")
-    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello.")
+    st.markdown("Sube una foto de tu rostro y te recomendaré cortes de cabello que podrás probar en la siguiente pestaña.")
+    
     uploaded_file = st.file_uploader("Sube una foto donde tu rostro se vea claramente", type=["jpg", "jpeg", "png"], key="style_uploader")
     
     if uploaded_file is not None:
@@ -310,33 +311,53 @@ with tab_asesor:
         with col1:
             st.image(image, caption="Imagen subida", width=250)
         with col2:
-            st.write("")
             if st.button("✨ ¡Recomiéndame un corte!", key="style_button"):
                 if not model:
                     st.error("El modelo de IA no está disponible.")
                 else:
-                    with st.spinner("Analizando tus rasgos... 🧐"):
+                    with st.spinner("Analizando tus rasgos y buscando los mejores estilos... 🧐"):
                         try:
+                            # Convertimos la lista de cortes en un string para el prompt
+                            cortes_disponibles_str = ", ".join(sorted(lista_cortes_populares))
+
                             prompt_parts = [
-                                """
-                                Actúa como un estilista de élite y experto en visagismo masculino. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen.
-                                **Tu Tarea (formato Markdown):**
-                                1. **Diagnóstico del Rostro:** Identifica la forma del rostro (ej. Ovalado, Cuadrado).
-                                2. **Recomendaciones de Cortes (Top 3):**
-                                    - **Nombre del Estilo:**
-                                    - **¿Por qué te favorece?:**
-                                    - **Nivel de Mantenimiento:** (Bajo, Medio, Alto).
-                                    - **Productos Recomendados:** (ej. Cera mate, pomada).
-                                    - **Inspiración Visual:** Proporciona un enlace de búsqueda de Google Images.
-                                Sé profesional y alentador.
+                                f"""
+                                Actúa como un estilista de élite y experto en visagismo. Tu cliente te ha mostrado una foto para que le des una asesoría de imagen.
+
+                                LISTA DE CORTES VÁLIDOS PARA RECOMENDAR:
+                                {cortes_disponibles_str}
+
+                                **TU TAREA (Formato Estricto Requerido):**
+                                1.  **Diagnóstico del Rostro:** Identifica la forma del rostro (ej. Ovalado, Cuadrado, Redondo).
+                                2.  **Recomendaciones (Top 2):** Proporciona dos recomendaciones. Para cada una, sigue EXACTAMENTE este formato:
+
+                                ### Recomendación [NÚMERO]
+                                - **Nombre del Estilo:** [Elige el nombre MÁS APROPIADO de la LISTA DE CORTES VÁLIDOS que te proporcioné].
+                                - **Análisis del Estilista:** [Explica brevemente en una frase por qué este corte le favorece según su tipo de rostro].
+                                - **Especificaciones para Copiar:**
+                                ```
+                                [Aquí, escribe especificaciones detalladas y creativas que el usuario pueda copiar y pegar en la otra pestaña. Incluye detalles sobre textura (liso, ondulado, rizado), longitud, color sugerido, tipo de desvanecido, etc. Sé específico. Por ejemplo: "Cabello ondulado con textura natural, color castaño claro con reflejos sutiles, longitud media en la parte superior, desvanecido bajo (low fade) en los lados."]
+                                ```
                                 """,
                                 image,
                             ]
-                            response = model.generate_content(prompt_parts)
+                            
+                            # Usamos la misma configuración de seguridad para evitar bloqueos
+                            safety_settings = {
+                                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                            }
+
+                            response = model.generate_content(prompt_parts, safety_settings=safety_settings)
+                            
                             st.divider()
                             st.markdown("### 💈 Mis recomendaciones para ti:")
+                            st.info("Copia el nombre del estilo y las especificaciones en la pestaña 'Hazme un Nuevo Corte' para probarlos.")
                             st.markdown(response.text)
                             st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
+                        
                         except Exception as e:
                             st.error("¡Oops! Ocurrió un error al analizar la imagen.")
                             st.exception(e)
@@ -412,9 +433,12 @@ with tab_hazme_corte:
                         try:
                             prompt_generacion_corte = [
     f"""
-    Trata la siguiente imagen como si fuera una estatua de un museo. Tu única tarea es re-esculpir el "cabello" de la estatua para que coincida con el estilo '{corte_deseado}'. El resultado debe mantener una apariencia artística, como si fuera una escultura o una pintura. No debe parecer una fotografía real.
+    Eres un estilista de IA. Tu tarea es visualizar un nuevo look.
+    Modifica la apariencia del cabello en la imagen para aplicar un corte estilo '{corte_deseado}'.
+    **Es crucial que, si la imagen contiene un rostro humano, la edición se realice como si fuera un modelo 3D o una ilustración estilizada.**
+    Mantén el rostro, la expresión y la pose, pero el cabello debe transformarse.
     Considera estas especificaciones adicionales: {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna.'}
-    Devuelve únicamente la imagen modificada.
+    La imagen final debe ser una visualización clara del nuevo corte. No tiene que ser fotorrealista si es un rostro humano.
     """,
     image_corte,
 ]
