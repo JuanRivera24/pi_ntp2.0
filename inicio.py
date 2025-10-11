@@ -121,12 +121,7 @@ with col2:
 
 # --- Barra Lateral (Sidebar) ---
 if img_logo_path and os.path.exists(img_logo_path):
-    # Mostrar el logo como botón
-    with st.sidebar:
-        if st.button(" ", key="logo_button"):
-            st.experimental_rerun()
-        st.image(img_logo_path, width=100)
-
+    st.sidebar.image(img_logo_path, width=100)
 st.sidebar.title("Menú de Navegación")
 st.sidebar.success("Selecciona una página para comenzar.")
 st.sidebar.markdown("---")
