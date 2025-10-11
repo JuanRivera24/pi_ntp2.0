@@ -414,11 +414,12 @@ with tab_hazme_corte:
     f"""
     Eres un estilista de IA. Tu tarea es visualizar un nuevo look.
     Modifica la apariencia del cabello en la imagen para aplicar un corte estilo '{corte_deseado}'.
-    **Es crucial que, si la imagen contiene un rostro humano, la edición se realice como si fuera un modelo 3D o una ilustración estilizada.**
+    Es crucial que, si la imagen contiene un rostro humano, la edición se realice como si fuera un modelo 3D o una ilustración estilizada.
     Mantén el rostro, la expresión y la pose, pero el cabello debe transformarse.
     Considera estas especificaciones adicionales: {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna.'}
     La imagen final debe ser una visualización clara del nuevo corte. No tiene que ser fotorrealista si es un rostro humano.
-    """,
+    **Devuelve únicamente la imagen modificada, sin texto adicional que describa la acción.**
+    """, # <-- ¡AQUÍ ES DONDE TERMINA EL PROMPT, LA IMAGEN ORIGINAL VA DESPUÉS DE ESTO!
     image_corte,
 ]
 
