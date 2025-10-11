@@ -72,9 +72,9 @@ if barbero_seleccionado != "Todos": df_filtrado = df_filtrado[df_filtrado['Nombr
 if servicio_seleccionado != "Todos": df_filtrado = df_filtrado[df_filtrado['Nombre_Servicio'] == servicio_seleccionado]
 
 # --- 5. INTERFAZ DE PESTAÑAS ---
-tab_reportes, tab_analista, tab_marketing, tab_oportunidades, tab_asesor = st.tabs([
+tab_reportes, tab_analista, tab_marketing, tab_oportunidades, tab_asesor, tab_hazme_corte = st.tabs([
     "📈 Generador de Reportes", "🕵️ Analista de Datos Interactivo", "🎯 Asistente de Marketing",
-    "💎 Detector de Oportunidades", "✂️ Asesor de Estilo Virtual"
+    "💎 Detector de Oportunidades", "✂️ Asesor de Estilo Virtual", "🎨 Hazme un Nuevo Corte" 
 ])
 
 # --- PESTAÑA 1: GENERADOR DE REPORTES ---
@@ -338,4 +338,90 @@ with tab_asesor:
                             st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
                         except Exception as e:
                             st.error("¡Oops! Ocurrió un error al analizar la imagen.")
+                            st.exception(e)
+                            
+# --- PESTAÑA 6: HAZME UN NUEVO CORTE (GENERACIÓN DIRECTA) ---
+with tab_hazme_corte:
+    st.header("🎨 Experimenta tu Nuevo Look")
+    st.markdown("Sube una foto y aplica el corte de cabello que siempre has querido. ¡La IA lo hará realidad!")
+
+    uploaded_file_corte = st.file_uploader("Sube una foto clara de tu rostro:", type=["jpg", "jpeg", "png"], key="corte_uploader")
+
+    if uploaded_file_corte is not None:
+        image_corte = Image.open(uploaded_file_corte)
+        col_img, col_ops = st.columns([1, 2])
+
+        with col_img:
+            st.image(image_corte, caption="Tu Imagen Original", width=250)
+
+        with col_ops:
+            st.markdown("### ✂️ Define tu Estilo")
+
+            # Lista de cortes populares (añade más si quieres)
+            lista_cortes_populares = [
+                "Wolf Cut", "Dreadlocks", "Buzz Cut", "Braids", "Slick Back",
+                "Curly Shag", "Shaggy Cut", "Bob Cut", "Pixie Cut", "Mullet",
+                "Messy Hair", "Mid Part", "Taper Fade", "French Crop", "Undercut",
+                "Quiff", "Fringe", "Crew Cut", "High and Tight", "Side Part",
+                "Afro", "Pompadour", "Bowl Cut", "Asymmetrical Cut", "Feathered Hair",
+                "Layered Cut", "Perm", "Cornrows", "Mohawk", "Bangs", "Long Layers"
+            ]
+            
+            # Opción de selección o escritura libre
+            modo_corte = st.radio("¿Cómo quieres especificar el corte?", ["Seleccionar de la lista", "Escribir libremente"], horizontal=True)
+            
+            corte_deseado = ""
+            if modo_corte == "Seleccionar de la lista":
+                corte_deseado = st.selectbox("Elige un estilo de corte:", [''] + sorted(lista_cortes_populares))
+            else:
+                corte_deseado = st.text_input("Describe el corte que deseas (ej. 'Long Bob con flequillo'):", placeholder="Ej: Buzz Cut con desvanecido", key="input_corte_libre")
+            
+            especificaciones_adicionales = st.text_area(
+                "Añade especificaciones (color, textura, longitud, etc.):",
+                placeholder="Ej: Pelo rubio platino y liso, un poco más largo en la parte de arriba, o rizado y castaño oscuro.",
+                key="especificaciones_corte"
+            )
+
+            if st.button("✨ ¡Generar mi Nuevo Corte!", key="generar_corte_btn", type="primary"):
+                if not model:
+                    st.error("El modelo de IA no está disponible.")
+                elif not corte_deseado:
+                    st.warning("Por favor, selecciona o escribe el corte deseado.")
+                else:
+                    with st.spinner("¡Tu nuevo look está tomando forma! Esto puede tardar un momento... ⏳"):
+                        try:
+                            # Prompt más avanzado para la generación de imagen
+                            prompt_generacion_corte = [
+                                f"""
+                                Eres un estilista de IA muy talentoso y un editor de fotos profesional.
+                                Tu única tarea es modificar la imagen de la persona que te proporciono.
+                                
+                                **Instrucciones clave:**
+                                1.  Aplica a la persona de la imagen un corte de cabello **estilo '{corte_deseado}'**.
+                                2.  **Mantén el rostro, la expresión, la ropa, el fondo y la iluminación de la foto original lo más idénticos posible.**
+                                    Solo cambia el cabello.
+                                3.  **Considera las siguientes especificaciones adicionales:** {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna especificación adicional.'}
+                                4.  **Analiza la foto para identificar si la persona es hombre o mujer y aplica un corte apropiado para su género**, a menos que las especificaciones adicionales indiquen lo contrario (ej. 'Pelo largo para hombre').
+                                5.  La imagen final debe ser una fotografía realista y de alta calidad del nuevo look.
+                                """,
+                                image_corte,
+                            ]
+
+                            generated_response = model.generate_content(prompt_generacion_corte)
+                            
+                            # Asumiendo que el objeto generado tiene una forma de acceder a la imagen
+                            # Esto puede variar ligeramente dependiendo de cómo el modelo de Gemini devuelve la imagen
+                            # Si da un error aquí, revisa la estructura de 'generated_response' en la documentación de Gemini
+                            if hasattr(generated_response, 'parts') and generated_response.parts:
+                                generated_image_output = generated_response.parts[0]
+                                st.success("¡Aquí está tu nuevo look!")
+                                st.image(generated_image_output, caption=f"Tu look con el corte: {corte_deseado}", use_column_width=True)
+                                st.link_button("📅 ¡Reserva tu cita ahora!", "https://pi-web2-six.vercel.app", type="primary")
+                            else:
+                                st.error("No se pudo obtener la imagen generada. El modelo no devolvió una parte de imagen.")
+                                st.json(generated_response.to_dict()) # Para depuración: ver la respuesta completa
+                                
+
+                        except Exception as e:
+                            st.error("¡Oops! Ocurrió un error al generar tu nuevo corte. Asegúrate de que la descripción sea clara y la imagen de buena calidad.")
                             st.exception(e)
