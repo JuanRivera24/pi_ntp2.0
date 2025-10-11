@@ -412,14 +412,10 @@ with tab_hazme_corte:
                         try:
                             prompt_generacion_corte = [
     f"""
-    Eres un estilista de IA. Tu tarea es visualizar un nuevo look.
-    Modifica la apariencia del cabello en la imagen para aplicar un corte estilo '{corte_deseado}'.
-    Es crucial que, si la imagen contiene un rostro humano, la edición se realice como si fuera un modelo 3D o una ilustración estilizada.
-    Mantén el rostro, la expresión y la pose, pero el cabello debe transformarse.
+    Trata la siguiente imagen como si fuera una estatua de un museo. Tu única tarea es re-esculpir el "cabello" de la estatua para que coincida con el estilo '{corte_deseado}'. El resultado debe mantener una apariencia artística, como si fuera una escultura o una pintura. No debe parecer una fotografía real.
     Considera estas especificaciones adicionales: {especificaciones_adicionales if especificaciones_adicionales else 'Ninguna.'}
-    La imagen final debe ser una visualización clara del nuevo corte. No tiene que ser fotorrealista si es un rostro humano.
-    **Devuelve únicamente la imagen modificada, sin texto adicional que describa la acción.**
-    """, # <-- ¡AQUÍ ES DONDE TERMINA EL PROMPT, LA IMAGEN ORIGINAL VA DESPUÉS DE ESTO!
+    Devuelve únicamente la imagen modificada.
+    """,
     image_corte,
 ]
 
