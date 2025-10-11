@@ -8,6 +8,7 @@ import google.generativeai as genai
 
 # --- FUNCIÓN PARA CODIFICAR IMÁGENES ---
 def get_image_as_base64(path):
+    """Codifica una imagen a base64 para ser embebida en HTML."""
     try:
         with open(path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode()
@@ -30,10 +31,10 @@ def run_diagnostics():
         st.success("✅ ¡ÉXITO! Conexión con la API de Google Gemini establecida.")
         with st.expander("Ver modelos encontrados"):
             st.write(models_list)
-            if 'models/gemini-2.5-flash-preview-05-20' in models_list:
-                st.success("El modelo usado en el proyecto fue encontrado (gemini-2.5-flash-preview-05-20).")
+            if 'models/gemini-1.5-flash-latest' in models_list: # Actualizado para un modelo más común
+                st.success("El modelo recomendado (gemini-1.5-flash-latest) fue encontrado.")
             else:
-                st.warning("ADVERTENCIA: El modelo usado en  no aparece en la lista.")
+                st.warning("ADVERTENCIA: El modelo recomendado no aparece en la lista.")
     except Exception as e:
         st.error("❌ ERROR: No se pudo conectar con la API de Google Gemini.")
         st.error(f"Detalle: {e}")
@@ -90,11 +91,6 @@ img_dev1_path = os.path.join(ASSETS_DIR, "1Desarrollador.png")
 img_dev2_path = os.path.join(ASSETS_DIR, "2Desarrollador.png")
 img_dev3_path = os.path.join(ASSETS_DIR, "3Desarrollador.png")
 
-# Codificamos las imágenes
-dev1_base64 = get_image_as_base64(img_dev1_path)
-dev2_base64 = get_image_as_base64(img_dev2_path)
-dev3_base64 = get_image_as_base64(img_dev3_path)
-
 # --- Configuración de la Página ---
 st.set_page_config(
     page_title="Kingdom Barber | Inicio",
@@ -120,8 +116,18 @@ with col2:
     st.markdown("#### **¿Qué puedes hacer?**\n- **📊 Dashboard:** Analiza métricas clave.\n- **🗓️ Gestión de Citas:** Organiza tu agenda.\n- **🤖 Asistente IA:** Crea comunicaciones únicas.\n- **📂 Datasets:** Analiza datos reales.")
 
 # --- Barra Lateral (Sidebar) ---
-if img_logo_path and os.path.exists(img_logo_path):
-    st.sidebar.image(img_logo_path, width=100)
+logo_base64 = get_image_as_base64(img_logo_path)
+if logo_base64:
+    # **CAMBIO CLAVE**: Se usa HTML para hacer el logo clickeable y que recargue la página.
+    st.sidebar.markdown(
+        f"""
+        <a href="." target="_self">
+            <img src="data:image/png;base64,{logo_base64}" width="100" style="cursor: pointer;">
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
+
 st.sidebar.title("Menú de Navegación")
 st.sidebar.success("Selecciona una página para comenzar.")
 st.sidebar.markdown("---")
@@ -132,6 +138,12 @@ run_button = st.sidebar.button("Ejecutar Diagnóstico del Sistema", use_containe
 # --- Sección de Desarrolladores ---
 st.markdown("<br><br><h2 style='text-align: center; color: #D4AF37;'>Conoce a los Desarrolladores</h2><hr style='border: 1px solid #D4AF37;'>", unsafe_allow_html=True)
 st.markdown("""<style>.developer-card{background-color:#262730;border-radius:15px;padding:20px;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;}.developer-image{width:120px;height:160px;border-radius:10px;object-fit:cover;margin-bottom:15px;border:3px solid #D4AF37;}</style>""", unsafe_allow_html=True)
+
+# Codificamos las imágenes de los desarrolladores
+dev1_base64 = get_image_as_base64(img_dev1_path)
+dev2_base64 = get_image_as_base64(img_dev2_path)
+dev3_base64 = get_image_as_base64(img_dev3_path)
+
 col_dev1, col_dev2, col_dev3 = st.columns(3, gap="large")
 with col_dev1:
     if dev1_base64:
