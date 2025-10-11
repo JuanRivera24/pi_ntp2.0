@@ -72,6 +72,35 @@ if len(rango_fechas) == 2:
 if barbero_seleccionado != "Todos": df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Barbero'] == barbero_seleccionado]
 if servicio_seleccionado != "Todos": df_filtrado = df_filtrado[df_filtrado['Nombre_Servicio'] == servicio_seleccionado]
 
+lista_cortes_populares = [
+    # --- Cortes Cortos ---
+    "Buzz Cut", "Crew Cut", "High and Tight", "Ivy League", "French Crop",
+    "Pixie Cut", "Caesar Cut", "Taper Fade", "Skin Fade", "Flat Top",
+    # --- Cortes Medianos ---
+    "Slick Back", "Pompadour", "Quiff", "Undercut", "Side Part",
+    "Bro Flow", "Mid Part (Cortina)", "Bowl Cut", "Shaggy Cut",
+    "Bob Cut", "Lob (Long Bob)", "Asymmetrical Bob", "Pageboy Cut",
+    # --- Cortes Largos ---
+    "Long Layers (Capas Largas)", "Feathered Hair (Cabello en Plumas)",
+    "Man Bun", "Top Knot", "Long and Straight", "Long and Wavy",
+    "V-Cut Layers",
+    # --- Cortes con Textura y Estilo ---
+    "Curly Shag", "Messy Hair", "Spiky Hair", "Fringe (Flequillo)",
+    "Bangs (Flequillo Recto)", "Wavy Bob", "Afro", "Perm (Permanente)",
+    "Textured Crop",
+    # --- Cortes Clásicos y Retro ---
+    "Mullet", "Jheri Curl", "Hi-Top Fade", "Ducktail", "Hime Cut",
+    # --- Estilos con Trenzas y Rastas ---
+    "Braids (Trenzas)", "Cornrows (Trenzas pegadas)", "Box Braids",
+    "Dreadlocks", "Viking Braids",
+    # --- Cortes de Tendencia ---
+    "Wolf Cut", "Butterfly Cut", "Octopus Cut", "Jellyfish Cut",
+    "Bixie Cut (Bob-Pixie)",
+    # --- Cortes con Diseños ---
+    "Hair Tattoo / Hair Design", "Hard Part (Línea Marcada)",
+    "Mohawk", "Faux Hawk (Fohawk)"
+]
+
 # --- 5. INTERFAZ DE PESTAÑAS ---
 tab_reportes, tab_analista, tab_marketing, tab_oportunidades, tab_asesor, tab_hazme_corte = st.tabs([
     "📈 Generador de Reportes", "🕵️ Analista de Datos Interactivo", "🎯 Asistente de Marketing",
