@@ -9,6 +9,7 @@ import sys
 from PIL import Image
 from datetime import datetime
 from babel.dates import format_date # 1. IMPORTAMOS BABEL
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # --- 1. CONFIGURACIÓN DE PÁGINA Y CONEXIÓN A LA IA ---
 st.set_page_config(page_title="Asistente IA", page_icon="🤖", layout="wide")
@@ -340,7 +341,7 @@ with tab_asesor:
                             st.error("¡Oops! Ocurrió un error al analizar la imagen.")
                             st.exception(e)
 
-# --- PESTAÑA 6: HAZME UN NUEVO CORTE (GENERACIÓN DIRECTA) ---
+# --- PESTAÑA 6: HAZME UN NUEVO CORTE (CÓDIGO COMPLETO Y FINAL) ---
 with tab_hazme_corte:
     st.header("🎨 Experimenta tu Nuevo Look")
     st.markdown("Sube una foto y aplica el corte de cabello que siempre has querido. ¡La IA lo hará realidad!")
@@ -423,15 +424,25 @@ with tab_hazme_corte:
                                 image_corte,
                             ]
 
-                            generated_response = model.generate_content(prompt_generacion_corte)
+                            # Define la configuración de seguridad para ser menos restrictiva
+                            safety_settings = {
+                                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                            }
+
+                            # Realiza la llamada a la IA AÑADIENDO la configuración de seguridad
+                            generated_response = model.generate_content(
+                                prompt_generacion_corte,
+                                safety_settings=safety_settings
+                            )
                             
-                            # --- VERIFICACIÓN DE SEGURIDAD PRIMERO ---
                             if generated_response.prompt_feedback.block_reason:
                                 st.error("La solicitud fue bloqueada por las políticas de seguridad de la IA.")
                                 st.warning(f"Razón del bloqueo: **{generated_response.prompt_feedback.block_reason.name}**")
                                 st.info("Intenta con una imagen diferente o una descripción más general.")
                             else:
-                                # Si no fue bloqueado, procede a buscar la imagen
                                 image_found = False
                                 for part in generated_response.parts:
                                     if hasattr(part, 'blob') and hasattr(part.blob, 'mime_type') and part.blob.mime_type.startswith("image/"):
@@ -452,7 +463,6 @@ with tab_hazme_corte:
                                     st.markdown(f"> {generated_response.text}")
                                     
                         except ValueError as e:
-                            # Captura el error específico de respuesta vacía
                             if "response.text" in str(e):
                                 st.error("La IA devolvió una respuesta completamente vacía, probablemente debido a un bloqueo de seguridad no informado.")
                                 st.info("Prueba a ajustar la configuración de seguridad o modifica el prompt.")
