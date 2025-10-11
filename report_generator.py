@@ -83,4 +83,4 @@ def generar_pdf_reporte(df, analisis_ia, contexto_reporte):
 
     # La sección de Visualización de Datos ha sido eliminada.
             
-    return pdf.output(dest='S')
+    return pdf.output(dest='S').encode('latin-1')
