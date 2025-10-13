@@ -1,211 +1,197 @@
 ======================================================================
-             KINGDOM BARBER - PANEL DE GESTIÓN Y ANÁLISIS (PI_NTP2.0)
+       📊 KINGDOM BARBER - PANEL DE GESTIÓN Y ANÁLISIS (PI_NTP)
 ======================================================================
 
-📅 Documentación: NTP - Kingdom Barber  
+📘 Documentación: NTP - Kingdom Barber  
 📆 Fecha: Octubre, 2025  
-👥 Autores: Juan Rivera, Andrés Vallejo, Alejandro Urrego
+👥 Autores: Juan Rivera, Andrés Vallejo, Alejandro Urrego  
 
 ======================================================================
-                   📘 DESCRIPCIÓN GENERAL
+                         📖 DESCRIPCIÓN GENERAL
 ======================================================================
 
-Kingdom Barber - Panel de Gestión y Análisis (pi_ntp2.0)  
-Este repositorio contiene el código del Panel de Gestión y Análisis de Kingdom Barber,  
-una aplicación web desarrollada en **Python** con **Streamlit**. Esta herramienta está diseñada  
-para la administración del negocio y la inteligencia de negocios.
+Este repositorio contiene el código del **Panel de Gestión y Análisis**
+de Kingdom Barber — una aplicación de **Inteligencia de Negocios (BI)**  
+desarrollada íntegramente en **Python con Streamlit**.
 
-Este proyecto es un **front-end puro** que consume datos en tiempo real desde la **API Central de Java**.
+El sistema permite visualizar, analizar y gestionar los datos del negocio,
+además de incorporar un **Asistente de Inteligencia Artificial (IA)**
+para generar reportes, responder preguntas en lenguaje natural y crear
+estrategias de marketing inteligentes.
+
+💡 Actualmente las páginas **1 (Dashboard)** y **2 (Gestión de Citas)**
+consumen directamente los datos desde la **API Central (`pi_movil2`)**,  
+mientras que el módulo de IA opera de forma independiente usando servicios
+de **Google Generative AI (Gemini)**.
 
 ======================================================================
-              📖 GUÍA DE EJECUCIÓN Y MANUAL DE USO
+                       🚀 INFORMACIÓN DE DESPLIEGUE
 ======================================================================
 
------------------------------
--- 1. REQUISITOS PREVIOS --
------------------------------
+🌐 Plataforma: Streamlit Cloud (https://streamlit.io/cloud)  
+🔗 URL Pública: https://kingdombarberdashboard.streamlit.app  
+🧩 API Consumida: https://pi-movil2-0.onrender.com  
+📦 Estado: Activo y en Producción  
 
-Antes de empezar, asegúrate de tener instalado lo siguiente en tu sistema:
+======================================================================
+                  🧭 GUÍA DE EJECUCIÓN Y MANUAL DE USO
+======================================================================
 
-- Python (versión 3.8 o superior).
+1️⃣ REQUISITOS PREVIOS  
+----------------------
+- 🐍 Python 3.9 o superior  
+- 📦 pip (gestor de paquetes)  
 
-⚠️ **Importante:** Esta aplicación es un cliente de datos.  
-Para que funcione, la API de Java (**pi_movil2.0**) debe estar ejecutándose en:  
-👉 `http://localhost:8080`
+⚠️ Nota:  
+La aplicación es un cliente de datos.  
+Debe conectarse a la API de Java (`pi_movil2`) para obtener información real.  
+Por defecto se conecta al entorno de producción.
 
------------------------------
--- 2. INSTALACIÓN Y EJECUCIÓN --
------------------------------
-
-Sigue estos pasos para poner en marcha el proyecto en tu máquina local.
-
-**Paso 1: Crear un Entorno Virtual**
-
-Abre una terminal en la carpeta raíz del proyecto y ejecuta:
-
-```
+2️⃣ INSTALACIÓN Y EJECUCIÓN  
+----------------------------
+# Crear entorno virtual
 python -m venv .venv
-```
 
-**Paso 2: Activar el Entorno Virtual**
-
-Windows:
-```
+# Activar entorno (Windows)
 .venv\Scripts\activate
-```
-(En Linux/macOS usar `source .venv/bin/activate`)
 
-Verás que el prompt de la terminal ahora empieza con `(.venv)`.
+# Activar entorno (macOS / Linux)
+source .venv/bin/activate
 
-**Paso 3: Instalar Dependencias**
-
-Con el entorno activado, instala las librerías necesarias:
-
-```
+# Instalar dependencias
 pip install -r requirements.txt
-```
 
-**Paso 4: Iniciar la Aplicación**
-
-Inicia la app de Streamlit:
-
-```
+# Ejecutar aplicación
 streamlit run inicio.py
-```
+
+La app se abrirá automáticamente en el navegador.
+
+🔐 Nota sobre IA:  
+Para el módulo del Asistente de IA, es necesario un archivo
+`.streamlit/secrets.toml` con tu clave:
+GOOGLE_API_KEY = "tu_clave_aqui"
 
 ======================================================================
-                🧩 GUÍA DE MÓDULOS PRINCIPALES
+                          💡 RESUMEN DEL PROYECTO
 ======================================================================
 
-La aplicación se divide en varias páginas accesibles desde la barra lateral izquierda.
+El **Panel de Gestión y Análisis (PI_NTP)** funciona como el cerebro visual
+del ecosistema Kingdom Barber, diseñado para el análisis de datos y la
+toma de decisiones estratégicas.  
 
------------------------------
--- a) DASHBOARD --
------------------------------
+Toda la información se consume en tiempo real desde la **API Central**
+(`pi_movil2`), mientras que la IA utiliza **Google Gemini** para análisis
+avanzado, generación de reportes automáticos y asesoramiento de marketing.  
 
-- Vista principal de análisis con KPIs: ingresos totales, número de citas, rendimiento de barberos.  
-- Gráficos interactivos que se actualizan según los filtros de la barra lateral.
-
------------------------------
--- b) GESTIÓN DE CITAS --
------------------------------
-
-- Herramienta para visualizar y filtrar el historial completo de citas (~4000 registros).  
-- Filtros por sede, barbero, cliente y rango de fechas.  
-- Tabla detallada y cálculo de ingresos según la selección.
-
------------------------------
--- c) ASISTENTE IA --
------------------------------
-
-Módulo avanzado que utiliza la IA de Google (Gemini) para tareas sobre los datos filtrados:
-
-- **Generador de Reportes:** crea informes en PDF con análisis estratégico.  
-- **Analista de Datos Interactivo:** chat que responde preguntas y ejecuta código Pandas.  
-- **Asistente de Marketing:** genera ideas y textos para campañas.  
-- **Detector de Oportunidades:** identifica patrones y anomalías.  
-- **Asesor de Estilo:** recomienda cortes de cabello a partir de una imagen.
+Además, se ha incorporado una **nueva cuarta página** dedicada al análisis
+de **datasets públicos** de datos.gov.co, permitiendo comparar la barbería
+con el mercado nacional y regional.
 
 ======================================================================
-                   📌 RESUMEN DEL PROYECTO
+                        🎯 OBJETIVOS DEL PROYECTO
 ======================================================================
 
-El Panel de Gestión de Kingdom Barber (pi_ntp2.0) es una aplicación de BI desarrollada en Python y Streamlit.  
-Su propósito es ser la herramienta central de administración y análisis de datos para la barbería, ofreciendo visualizaciones, gestión histórica y un asistente de IA.
+✅ Visualizar KPIs Clave: Ofrecer un dashboard dinámico con los indicadores
+más importantes del negocio.  
 
-**Nota:** Es un cliente de datos puro: toda la información se consume en tiempo real desde la API Central de Java + Spring Boot, que es la única fuente de verdad.
+✅ Facilitar la Consulta: Permitir búsquedas y filtros detallados sobre el
+historial completo de citas.  
 
-======================================================================
-                  🎯 OBJETIVOS DEL PROYECTO
-======================================================================
+✅ Integrar IA: Incluir un asistente inteligente (Gemini) que genere reportes,
+responda preguntas y proponga estrategias de marketing.  
 
------------------------------
--- Objetivo Principal --
------------------------------
-
-Proveer una herramienta de Business Intelligence (BI) completa y fácil de usar para la toma de decisiones estratégicas, centralizando la visualización y el análisis de los datos operativos de Kingdom Barber.
-
------------------------------
--- Objetivos Específicos --
------------------------------
-
-- Visualizar KPIs Clave: dashboard con indicadores (ingresos, citas, rendimiento de barberos).  
-- Facilitar la Consulta de Datos: interfaz para filtrar y buscar en el historial completo.  
-- Aprovechar la IA: integrar un asistente (Gemini) para reportes y consultas en lenguaje natural.  
-- Desacoplamiento Total: cliente independiente que consume exclusivamente la API de Java.
+✅ Analizar el Mercado: Incorporar un módulo que use datasets reales para
+evaluar el contexto competitivo de las barberías en Colombia.
 
 ======================================================================
-                   🧠 STACK TECNOLÓGICO
+                           🧠 STACK TECNOLÓGICO
 ======================================================================
 
-- Lenguaje: **Python**  
-- Framework Web: **Streamlit**  
-- Procesamiento de Datos: **Pandas**  
-- Visualización: **Plotly Express**  
-- Generación de PDF: **FPDF2**  
-- Inteligencia Artificial: **Google Generative AI (Gemini)**  
-- Consumo de API: **requests**  
-- Back-End Consumido: **API REST Java + Spring Boot** (`http://localhost:8080`)
+🐍 Lenguaje: Python  
+🧱 Framework Web: Streamlit  
+📊 Procesamiento: Pandas  
+📈 Visualización: Plotly Express  
+📄 Reportes PDF: FPDF2  
+🤖 Inteligencia Artificial: Google Generative AI (Gemini)  
+🌐 Consumo de API: requests  
+🗄️ Back-End Consumido: Java + Spring Boot (pi_movil2)  
 
 ======================================================================
-           🗂️ ARQUITECTURA Y ESTRUCTURA DE CARPETAS
+                🗂️ ARQUITECTURA Y ESTRUCTURA DE CARPETAS
 ======================================================================
 
-El proyecto sigue la estructura modular de Streamlit: cada página es un archivo `.py`.
+El proyecto adopta una **arquitectura modular**, donde cada página de Streamlit
+se ejecuta como un script independiente dentro de `pages/`.
 
-```
-pi_ntp2.0/
-├── 📂 .streamlit/         # Configuración de Streamlit (secrets.toml)
-├── 📂 assets/             # Recursos estáticos (imágenes, logos)
-├── 📂 pages/              # Páginas de la aplicación (cada .py = una página)
-│   ├── 📜 1_Dashboard.py
-│   ├── 📜 2_Gestion_de_Citas.py
-│   └── 📜 3_Asistente_IA.py
+📂 pi_ntp/
 │
-├── 📜 inicio.py           # Punto de entrada y bienvenida
-├── 📜 data_manager.py     # Módulo para comunicación con la API Java
-├── 📜 report_generator.py # Lógica para crear reportes PDF
-└── 📜 requirements.txt    # Dependencias del proyecto
-```
+├── 📂 .streamlit/
+│   └── 📜 secrets.toml          → Claves de API (ej. Google Gemini)
+│
+├── 📂 assets/                   → Recursos estáticos (logos, imágenes)
+│
+├── 📂 pages/                    → Secciones principales de la aplicación
+│   ├── 1_Dashboard.py           → Dashboard general de KPIs
+│   ├── 2_Gestion_de_Citas.py    → Exploración y control de citas
+│   ├── 3_Asistente_IA.py        → Asistente inteligente (Gemini)
+│   └── 4_Datasets_Reales.py     → Análisis de datasets públicos
+│
+├── 📜 inicio.py                 → Página de inicio y punto de entrada
+├── 📜 data_manager.py           → Conexión y manejo de datos desde la API
+├── 📜 report_generator.py       → Lógica para generar reportes PDF
+└── 📜 requirements.txt          → Lista de dependencias de Python  
 
 ======================================================================
-                  🧾 MÓDULOS PRINCIPALES (DETALLE)
+                   🔄 FLUJO DE DATOS Y DESPLIEGUE
 ======================================================================
 
-1. **Dashboard General (1_Dashboard.py)**  
-   - Fuente de datos: API Central de Java.  
-   - Métricas: ingresos totales, citas registradas, servicio popular, barbero top.  
-   - Gráficos: ingresos por servicio, carga de trabajo por barbero, evolución de citas.
+🧭 Flujo Típico: Carga del Dashboard  
 
-2. **Gestión de Citas (2_Gestion_de_Citas.py)**  
-   - Fuente de datos: `/historial/citas` (API Java).  
-   - Funcionalidades: filtros por sede, barbero, cliente, rango de fechas; tabla detallada; cálculo de ingresos.
+1️⃣ Usuario (Streamlit)  
+Selecciona filtros o visualiza la página del dashboard.  
 
-3. **Asistente de Inteligencia Artificial (3_Asistente_IA.py)**  
-   - Fuente de datos: misma API que el Dashboard.  
-   - Funciones: generador de reportes PDF, analista de datos interactivo (chat y ejecución de Pandas), asistente de marketing, detector de oportunidades, asesor de estilo virtual.
+2️⃣ Front-End (1_Dashboard.py)  
+Llama a funciones del módulo `data_manager.py` para obtener los datos.  
 
-======================================================================
-       🔄 FLUJO DE DATOS TÍPICO: CARGA DEL DASHBOARD
-======================================================================
+3️⃣ Lógica de Datos (`data_manager.py`)  
+Realiza peticiones `GET` a la API (`pi_movil2`), recibe los JSON y los
+transforma en DataFrames de Pandas para análisis.  
 
-1. **Usuario (Streamlit):** Abre la página del Dashboard.  
-2. **Front-End (`1_Dashboard.py`):** Llama a `obtener_vista_citas_completa()` en `data_manager.py`.  
-3. **Gestor de Datos (`data_manager.py`):**
-   - Realiza peticiones `GET` con `requests` a la API Java (ej.: `/historial/citas`, `/clientes`).  
-   - Recibe respuestas en JSON.  
-   - Convierte JSON a **DataFrame** (Pandas).  
-   - Traduce nombres de columnas (`camelCase` → `Pascal_Case`).  
-   - Realiza merges para obtener una tabla enriquecida.  
-4. **Respuesta al Front-End:** `data_manager.py` devuelve el DataFrame procesado al script del dashboard.  
-5. **Actualización UI:** Streamlit + Plotly Express renderizan gráficos y métricas interactivos con los datos recibidos.
+4️⃣ Visualización  
+Los gráficos son generados con **Plotly Express**, de forma dinámica
+y totalmente interactiva.  
+
+5️⃣ Asistente IA (`3_Asistente_IA.py`)  
+Utiliza **Google Gemini** para análisis textual, generación de reportes y
+respuestas automáticas en lenguaje natural.  
+
+6️⃣ Nuevo Módulo (`4_Datasets_Reales.py`)  
+Analiza datasets de datos.gov.co, genera dashboards comparativos y
+conclusiones dinámicas basadas en filtros seleccionados.  
 
 ======================================================================
-                          📌 NOTAS FINALES
+                   ☁️ DESPLIEGUE Y AUTOMATIZACIÓN (CLOUD)
 ======================================================================
 
-- Este panel es una pieza clave del ecosistema Kingdom Barber para análisis y toma de decisiones.  
-- Está diseñado para escalar y admitir nuevos módulos o integraciones con modelos predictivos en el futuro.
+🚀 Plataforma: Streamlit Cloud  
+🔄 CI/CD: Integrado con GitHub (despliegue automático al hacer push a main)  
+🔐 Gestión de Secrets: Claves y tokens seguros mediante `.streamlit/secrets.toml`  
+📦 Dependencias: Instaladas automáticamente desde `requirements.txt`  
+🌍 Producción: Acceso público desde  
+👉 https://kingdombarberdashboard.streamlit.app  
 
+======================================================================
+                    👥 AUTORES Y CONTRIBUIDORES
+======================================================================
+
+👤 Juan Manuel Rivera  
+👤 Andrés Vallejo  
+👤 Alejandro Urrego  
+
+Repositorio oficial:  
+🔗 https://github.com/JuanRivera24/pi_ntp2.0  
+
+======================================================================
+                           ✨ FIN DEL DOCUMENTO
 ======================================================================
 
