@@ -9,32 +9,39 @@ st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🗓️ Gestión de
 st.markdown("### Filtra, busca y gestiona todas las citas de la barbería.")
 st.markdown("---")
 
-# --- CORRECCIÓN ---
-# La función ahora devuelve dos DataFrames, los "desempaquetamos" en dos variables.
 df_vista, df_sedes = dm.obtener_vista_citas_completa()
 
 if df_vista.empty:
     st.error("No se pudieron cargar los datos de citas desde la API. Asegúrate de que la API de Java esté corriendo.")
     st.stop()
 
-# --- El resto del código funciona con las variables correctas ---
 st.sidebar.header("🔍 Filtros Avanzados")
 
+# --- LÓGICA DE FILTRADO SECUENCIAL Y DINÁMICO ---
+
+# Creamos una copia maestra para irla reduciendo
+df_filtrado = df_vista.copy()
+
+# PASO 1: Filtrar por Sede
 lista_sedes = ['Todas'] + df_sedes['Nombre_Sede'].unique().tolist()
 sede_sel = st.sidebar.selectbox("Filtrar por Sede:", options=lista_sedes)
-
 if sede_sel != "Todas":
-    df_filtrado_por_sede = df_vista[df_vista['Nombre_Sede'] == sede_sel]
-else:
-    df_filtrado_por_sede = df_vista.copy()
+    df_filtrado = df_filtrado[df_filtrado['Nombre_Sede'] == sede_sel]
 
-opciones_barbero = ["Todos"] + sorted(list(df_filtrado_por_sede['Nombre_Completo_Barbero'].dropna().unique()))
-opciones_cliente = ["Todos"] + sorted(list(df_filtrado_por_sede['Nombre_Completo_Cliente'].dropna().unique()))
-
+# PASO 2: Filtrar por Barbero (las opciones se basan en el resultado del filtro de sede)
+opciones_barbero = ["Todos"] + sorted(list(df_filtrado['Nombre_Completo_Barbero'].dropna().unique()))
 barbero_sel = st.sidebar.selectbox("Filtrar por Barbero:", options=opciones_barbero)
-cliente_sel = st.sidebar.selectbox("Filtrar por Cliente:", options=opciones_cliente)
+if barbero_sel != "Todos":
+    df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Barbero'] == barbero_sel]
 
-fechas_validas = df_filtrado_por_sede['Fecha'].dropna()
+# PASO 3: Filtrar por Cliente (las opciones se basan en el resultado de los filtros de sede Y barbero)
+opciones_cliente = ["Todos"] + sorted(list(df_filtrado['Nombre_Completo_Cliente'].dropna().unique()))
+cliente_sel = st.sidebar.selectbox("Filtrar por Cliente:", options=opciones_cliente)
+if cliente_sel != "Todos":
+    df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Cliente'] == cliente_sel]
+
+# PASO 4: Filtrar por Fecha (el rango de fechas se basa en el resultado de TODOS los filtros anteriores)
+fechas_validas = df_filtrado['Fecha'].dropna()
 min_fecha = fechas_validas.min().date() if not fechas_validas.empty else datetime.now().date()
 max_fecha = fechas_validas.max().date() if not fechas_validas.empty else datetime.now().date()
 
@@ -46,16 +53,13 @@ fecha_sel = st.sidebar.date_input(
     key="date_range_picker_gestion"
 )
 
-df_filtrado = df_filtrado_por_sede.copy()
-
-if barbero_sel != "Todos":
-    df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Barbero'] == barbero_sel]
-if cliente_sel != "Todos":
-    df_filtrado = df_filtrado[df_filtrado['Nombre_Completo_Cliente'] == cliente_sel]
 if len(fecha_sel) == 2:
     fecha_inicio, fecha_fin = fecha_sel
+    # Aseguramos que la columna 'Fecha' no tenga nulos antes de comparar
     df_filtrado = df_filtrado.dropna(subset=['Fecha'])
     df_filtrado = df_filtrado[(df_filtrado['Fecha'].dt.date >= fecha_inicio) & (df_filtrado['Fecha'].dt.date <= fecha_fin)]
+
+# --- FIN DE LA LÓGICA DE FILTRADO ---
 
 df_citas_reales = df_filtrado.dropna(subset=['ID_Cita'])
 
@@ -74,7 +78,7 @@ else:
         "Nombre_Servicio", "Nombre_Completo_Barbero", "Precio"
     ]
     st.dataframe(
-        df_citas_reales[columnas_a_mostrar].sort_values(by="Fecha", ascending=False),
+        df_citas_reales[columnas_a_mostrar].sort_values(by=["Fecha", "Hora"], ascending=[False, True]),
         use_container_width=True,
         hide_index=True,
         column_config={
